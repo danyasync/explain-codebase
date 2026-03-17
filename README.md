@@ -115,9 +115,9 @@ Explain Codebase
 Repository
 
   Path        C:\Projects\checkout-service
-  Type        TypeScript backend service
-  Language    typescript
-  Files       42
+  Type        Python backend service
+  Language    python
+  Files       7
 
 Architecture
 
@@ -127,7 +127,7 @@ Architecture
 
 Suggested starting point
 
-  server.ts
+  api_server.py
 
 Run with --verbose to see full architecture
 ```
@@ -137,13 +137,12 @@ Verbose mode adds more structure, including a likely execution path:
 ```text
 Execution flow
 
-server.ts
-|- routes/checkout_routes.ts
-|- controllers/checkout_controller.ts
-|  \- services/payment_orchestrator.ts
-|     |- repositories/order_store.ts
-|     \- clients/payment_gateway.ts
-\- middleware/request_context.ts
+api_server.py
+|- routes/order_routes.py
+|- services/order_service.py
+|  |- repositories/order_repository.py
+|  \- clients/warehouse_client.py
+\- middleware/auth_guard.py
 ```
 
 This output is heuristic. It reflects likely structure based on static signals such as imports, naming conventions, and folder layout. It should be treated as a high-value map, not as guaranteed truth.
