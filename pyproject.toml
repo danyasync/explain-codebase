@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "explain-codebase"
+version = "0.1.0"
+description = "CLI tool for explaining unfamiliar codebases."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "networkx>=3.3",
+  "pydantic>=2.7",
+  "rich>=13.7",
+  "typer>=0.12",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2",
+]
+
+[project.scripts]
+explain-codebase = "explain_codebase.cli.main:run"
+
+[tool.hatch.build.targets.wheel]
+packages = ["explain_codebase"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
