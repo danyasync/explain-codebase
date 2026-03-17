@@ -1,27 +1,25 @@
 # Explain Codebase
 
-`explain-codebase` helps developers understand unfamiliar repositories faster. It scans source code, builds a dependency graph, detects architecture signals, and presents the results through a compact CLI, JSON output, and optional HTML artifacts.
+CLI tool that analyzes any repository and explains its architecture, entrypoints, dependencies, and impact of changes.
 
-## Features
+`explain-codebase` analyzes a repository and helps developers understand unfamiliar projects faster by showing how the system is structured and where execution likely starts.
 
-- Detect project language and likely project type
-- Analyze local folders and public GitHub repositories
-- Show numbered pipeline stages during execution
-- Support compact default output, `--verbose`, and `--deep`
-- Detect entrypoints automatically
-- Rank core modules by incoming imports
-- Infer likely execution flow
-- Detect side-effect modules that touch database, network, filesystem, or cache
-- Detect architecture folders such as `services/`, `repositories/`, `routes/`, and `models/`
-- Detect large files over 800 LOC
-- Detect hotspots by coupling score
-- Detect risky files to modify
-- Detect architecture smells such as circular dependencies and utility god modules
-- Generate `dependency_graph.html`
-- Generate `codebase_report.html`
-- Explain a single file in project context
-- Generate an onboarding reading path
-- Support CI mode with non-zero exit code when architecture issues are found
+It works with both local folders and public GitHub repositories.
+
+---
+
+## Why
+
+When opening a new repository, it is often unclear:
+
+- where the application starts
+- which modules are central
+- which files interact with external systems
+- what files are risky to modify
+
+`explain-codebase` scans the project, builds a dependency graph, detects architectural signals, and produces a compact CLI overview that helps you understand the codebase faster.
+
+---
 
 ## Installation
 
@@ -35,153 +33,33 @@ For local development:
 pip install -e .[dev]
 ```
 
-## Usage
+## Quick Start
 
-Repository analysis:
+Analyze the current repository:
 
 ```bash
 explain-codebase .
-explain-codebase ./repo
-explain-codebase C:\projects\repo
-explain-codebase . --verbose
-explain-codebase . --deep
-explain-codebase . --json
 ```
 
-Other modes:
+Verbose architecture output:
 
 ```bash
-explain-codebase onboarding .
-explain-codebase file src/services/user_service.ts
-explain-codebase . --graph
-explain-codebase . --report
-explain-codebase . --ci
+explain-codebase . --verbose
 ```
 
-Remote GitHub repositories:
+Deep architecture analysis:
+
+```bash
+explain-codebase . --deep
+```
+
+Analyze a GitHub repository:
 
 ```bash
 explain-codebase https://github.com/user/repo
-explain-codebase https://github.com/user/repo.git
 ```
 
-## Help Style
-
-The CLI help is intentionally minimal and follows a plain devtool style:
-
-```text
-Explain Codebase - understand any repository architecture
-
-Usage
-  explain-codebase [TARGET] [OPTIONS]
-
-Arguments
-  TARGET              Path to repository or GitHub repository URL
-
-Options
-  --verbose           Show full architecture output
-  --deep              Show architecture issues
-  --json              Output analysis as JSON
-  --graph             Generate dependency_graph.html
-  --report            Generate codebase_report.html
-  --ci                Exit with code 1 when architecture issues are detected
-  --max-files N       Limit scanned source files
-
-Examples
-  explain-codebase .
-  explain-codebase https://github.com/user/repo
-  explain-codebase . --verbose
-```
-
-## Execution Stages
-
-The CLI prints short progress stages:
-
-```text
-[1/5] Resolving target...
-[2/5] Preparing local repository...
-[3/5] Scanning project files...
-[4/5] Building dependency graph...
-[5/5] Generating explanation...
-```
-
-For remote repositories, stage 2 becomes:
-
-```text
-[2/5] Cloning repository...
-```
-
-## Remote Repository Flow
-
-Supported remote URL formats:
-
-```text
-https://github.com/<owner>/<repo>
-https://github.com/<owner>/<repo>.git
-```
-
-When a GitHub repository URL is used, the tool:
-
-1. Resolves the target
-2. Verifies repository availability through the GitHub API
-3. Asks for confirmation before cloning
-4. Creates a temporary workspace
-5. Clones the repository
-6. Runs the analysis
-7. Removes the temporary workspace
-
-Example:
-
-```text
-[1/5] Resolving target...
-Repository
-  https://github.com/user/repo
-
-Download repository into a temporary directory? (y/n): y
-Temporary workspace
-  C:\Users\User\AppData\Local\Temp\explain_codebase_ab12cd
-
-[2/5] Cloning repository...
-[3/5] Scanning project files...
-[4/5] Building dependency graph...
-[5/5] Generating explanation...
-Cleaning temporary workspace...
-Temporary workspace removed
-```
-
-Repository not found:
-
-```text
-[1/5] Resolving target...
-Error: Repository not found
-https://github.com/user/non-existing-repo
-Make sure the repository exists and is publicly accessible.
-```
-
-Repository not accessible:
-
-```text
-[1/5] Resolving target...
-Error: Repository is not accessible
-https://github.com/user/private-repo
-Only public repositories are supported.
-```
-
-## Output Modes
-
-### Default Mode
-
-```bash
-explain-codebase .
-```
-
-Default mode stays compact and focuses on:
-
-- What kind of project this is
-- Where execution likely starts
-- Which file to read first
-
-Example:
+## Example Output
 
 ```text
 Explain Codebase
@@ -189,7 +67,7 @@ Explain Codebase
 
 Repository
 
-  Path        C:\Users\User\Desktop\pip
+  Path        C:\Projects\orders-api
   Type        Python backend service
   Language    python
   Files       7
@@ -202,231 +80,124 @@ Architecture
 
 Suggested starting point
 
-  bot.py
+  api_server.py
 
 Run with --verbose to see full architecture
 ```
 
-### Verbose Mode
+Verbose mode provides a deeper architecture view:
+
+```text
+Execution flow
+
+api_server.py
+|- routes/order_routes.py
+|- services/order_service.py
+|  |- repositories/order_repository.py
+|  \- clients/warehouse_client.py
+\- middleware/auth_guard.py
+```
+
+## Features
+
+- Analyze local folders and public GitHub repositories
+- Detect project language and project type
+- Detect entrypoints automatically
+- Rank core modules by dependency usage
+- Infer likely execution flow
+- Detect modules that interact with database, network, filesystem, or cache
+- Detect architecture folders such as `services`, `repositories`, `routes`, and `models`
+- Detect large modules and highly coupled files
+- Detect architecture smells such as circular dependencies
+- Generate dependency graph visualizations
+- Generate HTML architecture reports
+- Explain a single file in project context
+- Suggest onboarding reading paths
+- Support CI mode for architecture checks
+
+## Common Commands
+
+Analyze a repository:
+
+```bash
+explain-codebase .
+```
+
+Verbose architecture output:
 
 ```bash
 explain-codebase . --verbose
 ```
 
-Verbose mode shows the architecture view:
-
-- Entrypoints
-- Core modules
-- Side-effect modules
-- Execution flow as a tree
-- File roles
-
-Example:
-
-```text
-Explain Codebase
---------------------------------
-
-Repository
-
-  Path        C:\Users\User\Desktop\pip
-  Type        Python backend service
-  Language    python
-  Files       7
-
-Architecture summary
-
-  Entrypoints        1
-  Core modules       5
-  Side effects       4
-
-Suggested starting point
-
-  bot.py
-
-Entrypoints
-
-  bot.py
-
-Core modules
-
-  config.py
-  captcha_utils.py
-  data/persona.py
-  llm.py
-  utils.py
-
-Side-effect modules
-
-  bot.py
-  captcha_utils.py
-  config.py
-  llm.py
-
-Execution flow
-
-bot.py
-├─ config.py
-├─ captcha_utils.py
-│  └─ config.py
-└─ llm.py
-   ├─ config.py
-   └─ data/persona.py
-
-File roles
-
-  bot.py            entrypoint
-  config.py         config
-  llm.py            service
-  captcha_utils.py  utility
-  data/persona.py   utility
-  utils.py          utility
-
-Run with --deep to see architecture issues
-```
-
-### Deep Mode
+Deep architecture analysis:
 
 ```bash
 explain-codebase . --deep
 ```
 
-Deep mode focuses on architecture risks:
-
-- Circular dependencies
-- Utility god modules
-- Large modules
-- High coupling modules
-
-Example:
-
-```text
-Explain Codebase
---------------------------------
-
-Repository
-
-  Path        C:\Users\User\Desktop\pip
-  Type        Python backend service
-  Language    python
-  Files       7
-
-Architecture summary
-
-  Entrypoints        1
-  Core modules       5
-  Side effects       4
-
-Suggested starting point
-
-  bot.py
-
-Architecture issues
-
-Circular dependency
-  user_service -> billing_service -> user_service
-
-Large modules
-
-  billing_service.py (980 LOC)
-
-High coupling modules
-
-  config.py
-  utils.py
-```
-
-## Onboarding Mode
+Suggest a reading order for a new developer:
 
 ```bash
 explain-codebase onboarding .
 ```
 
-This mode suggests a reading order for a new developer.
-
-Example:
-
-```text
-1. server.ts
-2. router.ts
-3. user_controller.ts
-4. user_service.ts
-5. user_repository.ts
-```
-
-## Explain Single File
+Explain a single file:
 
 ```bash
-explain-codebase file src/services/user_service.ts
+explain-codebase file src/services/order_service.ts
 ```
 
-Single-file mode reports:
-
-- File role
-- Which files use it
-- Which files it depends on
-- Likely responsibilities
-- Import counts
-- Side effects
-
-## HTML Outputs
-
-Dependency graph:
+Generate a dependency graph:
 
 ```bash
 explain-codebase . --graph
 ```
 
-Generates:
-
-```text
-dependency_graph.html
-```
-
-Architecture report:
+Generate an HTML architecture report:
 
 ```bash
 explain-codebase . --report
 ```
 
-Generates:
-
-```text
-codebase_report.html
-```
-
-## CI Mode
+Run in CI mode:
 
 ```bash
 explain-codebase . --ci
 ```
 
-If architecture issues are found, the tool exits with code `1`.
+## Remote Repositories
 
-## JSON Output
+You can analyze a public GitHub repository directly:
 
 ```bash
-explain-codebase . --json
+explain-codebase https://github.com/user/repo
 ```
 
-The JSON output includes fields such as:
+The tool will:
 
-- `project_type`
-- `entrypoints`
-- `core_modules`
-- `core_module_rankings`
-- `side_effect_modules`
-- `architecture_modules`
-- `large_files`
-- `hotspots`
-- `dangerous_files`
-- `architecture_issues`
-- `execution_flow`
-- `dependency_graph_output`
-- `html_report_output`
+1. Resolve the repository
+2. Check that it exists and is publicly accessible
+3. Ask for confirmation before cloning
+4. Clone it into a temporary workspace
+5. Run the analysis
+6. Remove the temporary workspace automatically
 
-## Tests
+## Output Modes
+
+Default mode shows a compact overview:
 
 ```bash
-pytest
+explain-codebase .
+```
+
+Verbose mode shows the full architecture structure:
+
+```bash
+explain-codebase . --verbose
+```
+
+Deep mode focuses on architecture risks and potential issues:
+
+```bash
+explain-codebase . --deep
 ```
