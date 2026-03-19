@@ -34,7 +34,7 @@ What's new:
 
 This makes the tool much more useful on real-world repositories by excluding ignored, temporary, and untracked files from the analysis.
 
-##№ v0.1.4
+### v0.1.4
 
 Improved dependency graph visualization.
 
