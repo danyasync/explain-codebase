@@ -116,6 +116,10 @@ python -m pip install -e ".[dev]"
 
 `--graph` writes `dependency_graph.html`. `--report` writes `codebase_report.html`. Both files are written to the current working directory.
 
+The interactive graph starts from deterministic node positions with a restrained ambient pulse and directional edge flow. Selecting a node highlights its direct dependencies without restarting the layout, while search and filters keep the remaining nodes in place.
+
+Nodes can be dragged into a more useful arrangement. When a dropped node overlaps another, a bounded local collision pass gently separates only the nearby nodes involved; it never restarts global layout physics. Tiny pointer movement during an ordinary click is ignored.
+
 | Flag | View |
 | --- | --- |
 | `--architecture` | Architecture-level relationships; this is the default graph view |
