@@ -6,7 +6,6 @@ from pathlib import Path
 from explain_codebase.models.file_info import FileInfo
 from explain_codebase.utils.file_utils import safe_read_text
 
-
 SIDE_EFFECT_IMPORT_CATEGORIES = {
     "aiohttp": "network",
     "asyncpg": "database",
@@ -14,17 +13,13 @@ SIDE_EFFECT_IMPORT_CATEGORIES = {
     "httpx": "network",
     "motor": "database",
     "mysql": "database",
-    "os": "filesystem",
-    "pathlib": "filesystem",
     "psycopg": "database",
     "psycopg2": "database",
     "pymongo": "database",
     "redis": "cache",
     "requests": "network",
-    "shutil": "filesystem",
     "sqlalchemy": "database",
     "sqlite3": "database",
-    "tempfile": "filesystem",
     "urllib": "network",
 }
 
@@ -46,10 +41,45 @@ SIDE_EFFECT_CALL_PREFIXES = {
     "write_text": "filesystem",
 }
 
+FILESYSTEM_CALL_SUFFIXES = {
+    ".open",
+    ".read_bytes",
+    ".read_text",
+    ".write_bytes",
+    ".write_text",
+}
+
+FILESYSTEM_CALL_NAMES = {
+    "os.mkdir",
+    "os.makedirs",
+    "os.remove",
+    "os.rename",
+    "os.replace",
+    "os.rmdir",
+    "os.scandir",
+    "os.unlink",
+    "os.walk",
+}
+
+ROUTE_DECORATOR_NAMES = {
+    "api_route",
+    "delete",
+    "get",
+    "head",
+    "options",
+    "patch",
+    "post",
+    "put",
+    "route",
+    "trace",
+    "websocket",
+    "websocket_route",
+}
+
 
 class PythonParser:
     def parse(self, path: Path, root_path: Path) -> FileInfo:
-        content = safe_read_text(path)
+        content = safe_read_text(path, root_path=root_path)
         relative_path = path.relative_to(root_path).as_posix()
         info = FileInfo(
             path=relative_path,
@@ -69,21 +99,20 @@ class PythonParser:
                     self._register_side_effect_import(info, alias.name)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
-                if node.level:
-                    info.imports.append("." * node.level + module)
-                elif module:
-                    info.imports.append(module)
+                import_base = "." * node.level + module
+                if import_base:
+                    info.imports.append(import_base)
+                if not node.level and module:
                     self._register_side_effect_import(info, module)
-            elif isinstance(node, ast.FunctionDef):
-                info.functions.append(node.name)
-                for decorator in node.decorator_list:
-                    decorator_name = self._expr_name(decorator)
-                    if decorator_name:
-                        info.decorators.append(decorator_name)
-                        if any(signal in decorator_name.lower() for signal in ["get", "post", "put", "delete", "route"]):
-                            info.route_handlers.append(node.name)
-            elif isinstance(node, ast.AsyncFunctionDef):
-                info.functions.append(node.name)
+                for alias in node.names:
+                    if alias.name == "*":
+                        continue
+                    separator = "" if import_base.endswith(".") else "."
+                    imported_member = f"{import_base}{separator}{alias.name}" if import_base else alias.name
+                    if imported_member != import_base:
+                        info.imports.append(imported_member)
+            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                self._register_function(info, node)
             elif isinstance(node, ast.ClassDef):
                 info.classes.append(node.name)
             elif isinstance(node, ast.Call):
@@ -96,9 +125,8 @@ class PythonParser:
                     if any(signal in lowered for signal in ["typer.run", "click.command", "argparse"]):
                         info.has_cli_signal = True
                     self._register_side_effect_call(info, lowered)
-            elif isinstance(node, ast.If):
-                if self._is_main_guard(node):
-                    info.has_main_guard = True
+            elif isinstance(node, ast.If) and self._is_main_guard(node):
+                info.has_main_guard = True
 
         return info
 
@@ -111,6 +139,16 @@ class PythonParser:
         if isinstance(node, ast.Call):
             return self._expr_name(node.func)
         return None
+
+    def _register_function(self, info: FileInfo, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+        info.functions.append(node.name)
+        for decorator in node.decorator_list:
+            decorator_name = self._expr_name(decorator)
+            if not decorator_name:
+                continue
+            info.decorators.append(decorator_name)
+            if decorator_name.rsplit(".", 1)[-1].lower() in ROUTE_DECORATOR_NAMES:
+                info.route_handlers.append(node.name)
 
     def _is_main_guard(self, node: ast.If) -> bool:
         test = node.test
@@ -130,8 +168,10 @@ class PythonParser:
             self._add_side_effect(info, category)
 
     def _register_side_effect_call(self, info: FileInfo, call_name: str) -> None:
+        if call_name in FILESYSTEM_CALL_NAMES or any(call_name.endswith(suffix) for suffix in FILESYSTEM_CALL_SUFFIXES):
+            self._add_side_effect(info, "filesystem")
         for prefix, category in SIDE_EFFECT_CALL_PREFIXES.items():
-            if call_name == prefix or call_name.startswith(prefix):
+            if call_name == prefix or (prefix.endswith(".") and call_name.startswith(prefix)):
                 self._add_side_effect(info, category)
 
     def _add_side_effect(self, info: FileInfo, category: str) -> None:

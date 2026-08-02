@@ -15,6 +15,7 @@ class HotspotDetector:
                 coupling_score=graph.in_degree(node) + graph.out_degree(node),
             )
             for node in graph.nodes
+            if graph.degree(node) > 0
         ]
         hotspots.sort(key=lambda item: (-item.coupling_score, -item.incoming_imports, item.path))
         return hotspots[:limit]

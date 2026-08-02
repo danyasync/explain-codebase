@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 import click
@@ -32,6 +33,8 @@ from explain_codebase.renderers.graph_renderer import GraphRenderer, GraphViewOp
 from explain_codebase.renderers.html_report_renderer import HtmlReportRenderer
 from explain_codebase.renderers.json_renderer import JsonRenderer
 from explain_codebase.scanner.project_scanner import ProjectScanner
+from explain_codebase.utils.output_utils import terminal_safe_text
+
 
 class PlainHelpCommand(click.Command):
     def get_help(self, ctx: click.Context) -> str:
@@ -58,6 +61,7 @@ class PlainHelpCommand(click.Command):
             "  --report            Generate codebase_report.html",
             "  --ci                Exit with code 1 when architecture issues are detected",
             "  --max-files N       Limit scanned source files",
+            "  --version           Show the installed version and exit",
             "  -h, --help          Show this message and exit",
             "",
             "Examples",
@@ -140,7 +144,7 @@ class Analyzer:
             root_path=target,
             files=parsed_files,
             languages=sorted(languages),
-            project_type=self.project_type_detector.detect(target, sorted(languages)),
+            project_type=self.project_type_detector.detect(target, sorted(languages), parsed_files),
         )
 
     def build_dependency_graph(self, project_info: ProjectInfo):
@@ -206,14 +210,14 @@ class Analyzer:
 
     def guess_project_root(self, target_file: Path) -> Path:
         resolved_target = target_file.resolve()
-        ancestors = [resolved_target.parent, *resolved_target.parents]
-
-        for parent in ancestors:
-            if self._looks_like_project_root(parent):
-                return parent
+        ancestors = list(resolved_target.parents)
 
         for parent in ancestors:
             if any((parent / marker).exists() for marker in self.ROOT_MARKERS):
+                return parent
+
+        for parent in ancestors:
+            if self._looks_like_project_root(parent):
                 return parent
 
         return resolved_target.parent
@@ -292,17 +296,25 @@ def main(
     )
 
 
+def _installed_version() -> str:
+    try:
+        return version("explain-codebase")
+    except PackageNotFoundError:
+        return "unknown"
+
+
 @click.command(
     name="explain-codebase",
     cls=PlainHelpCommand,
     context_settings={"help_option_names": ["-h", "--help"]},
 )
+@click.version_option(version=_installed_version(), prog_name="explain-codebase")
 @click.argument("target", required=False, default=".")
 @click.argument("extra_args", nargs=-1)
 @click.option("--json", "json_output", is_flag=True, help="Output analysis as JSON")
 @click.option("--verbose", is_flag=True, help="Show full architecture output")
 @click.option("--deep", is_flag=True, help="Show architecture issues")
-@click.option("--max-files", type=int, default=None, metavar="N", help="Limit scanned source files")
+@click.option("--max-files", type=click.IntRange(min=1), default=None, metavar="N", help="Limit scanned source files")
 @click.option("--graph", is_flag=True, help="Generate dependency_graph.html")
 @click.option("--full", "graph_full", is_flag=True, help="Render the full file-level graph")
 @click.option("--architecture", "graph_architecture", is_flag=True, help="Render architecture view graph")
@@ -352,22 +364,22 @@ def run(argv: list[str] | None = None) -> None:
         option_name = exc.option_name
         if not option_name.startswith("--"):
             option_name = f"--{option_name.lstrip('-')}"
-        click.echo(f"Error: Unknown option {option_name}", err=True)
+        click.echo(f"Error: Unknown option {terminal_safe_text(option_name)}", err=True)
         possibilities = getattr(exc, "possibilities", None) or []
         if possibilities:
             suggestion = possibilities[0]
             if not suggestion.startswith("--"):
                 suggestion = f"--{suggestion.lstrip('-')}"
-            click.echo(f"Did you mean {suggestion}?", err=True)
-        raise SystemExit(exc.exit_code)
+            click.echo(f"Did you mean {terminal_safe_text(suggestion)}?", err=True)
+        raise SystemExit(exc.exit_code) from None
     except click.ClickException as exc:
-        click.echo(f"Error: {exc.format_message()}", err=True)
-        raise SystemExit(exc.exit_code)
+        click.echo(f"Error: {terminal_safe_text(exc.format_message())}", err=True)
+        raise SystemExit(exc.exit_code) from None
     except typer.BadParameter as exc:
-        click.echo(f"Error: {exc}", err=True)
-        raise SystemExit(2)
+        click.echo(f"Error: {terminal_safe_text(exc)}", err=True)
+        raise SystemExit(2) from None
     except typer.Exit as exc:
-        raise SystemExit(exc.exit_code)
+        raise SystemExit(exc.exit_code) from None
 
 
 def _run_project_analysis(
@@ -427,7 +439,7 @@ def _run_project_analysis(
         if ci and result.architecture_issues:
             typer.echo("Architecture warnings detected:", err=True)
             for issue in result.architecture_issues:
-                typer.echo(issue.description, err=True)
+                typer.echo(terminal_safe_text(issue.description), err=True)
             raise typer.Exit(code=1)
     finally:
         if resolved is not None:
@@ -547,13 +559,13 @@ def _generate_optional_outputs(
         graph_path = output_root / "dependency_graph.html"
         GraphRenderer().render(result, dependency_graph, graph_path, options=graph_options)
         result.dependency_graph_output = str(graph_path.resolve())
-        typer.echo(f"Dependency graph written to {graph_path.resolve()}", err=True)
+        typer.echo(f"Dependency graph written to {terminal_safe_text(graph_path.resolve())}", err=True)
 
     if report:
         report_path = output_root / "codebase_report.html"
         HtmlReportRenderer().render(result, dependency_graph, report_path, graph_options=graph_options)
         result.html_report_output = str(report_path.resolve())
-        typer.echo(f"HTML report written to {report_path.resolve()}", err=True)
+        typer.echo(f"HTML report written to {terminal_safe_text(report_path.resolve())}", err=True)
 
 
 if __name__ == "__main__":

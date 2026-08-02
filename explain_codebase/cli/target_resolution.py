@@ -9,7 +9,11 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+import click
 import typer
+
+from explain_codebase.utils.git_utils import hardened_git_runtime
+from explain_codebase.utils.output_utils import terminal_safe_text
 
 
 @dataclass
@@ -31,6 +35,7 @@ class GitHubRepository:
 
 class TargetResolver:
     TOTAL_STEPS = 5
+    CLONE_TIMEOUT_SECONDS = 120
 
     def resolve(self, target: str) -> ResolvedTarget:
         normalized_target = target.strip() or "."
@@ -77,15 +82,26 @@ class TargetResolver:
 
         temp_dir = Path(tempfile.mkdtemp(prefix="explain_codebase_")).resolve()
         typer.echo("Temporary workspace", err=True)
-        typer.echo(f"  {temp_dir}", err=True)
+        typer.echo(f"  {terminal_safe_text(temp_dir)}", err=True)
         typer.echo("", err=True)
 
         try:
             self._print_stage(2, "Cloning repository...")
             self._clone_repository(repository.clone_url, temp_dir)
-        except Exception:
+        except FileNotFoundError:
             shutil.rmtree(temp_dir, ignore_errors=True)
-            raise
+            raise click.ClickException("Git is required to analyze a remote repository.") from None
+        except subprocess.TimeoutExpired:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise click.ClickException(
+                f"Repository clone exceeded the {self.CLONE_TIMEOUT_SECONDS}-second time limit."
+            ) from None
+        except subprocess.CalledProcessError:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise click.ClickException("Git could not clone the requested public repository.") from None
+        except OSError as error:
+            shutil.rmtree(temp_dir, ignore_errors=True)
+            raise click.ClickException(f"Could not prepare the remote repository: {error}") from None
 
         return ResolvedTarget(
             analysis_path=temp_dir,
@@ -95,15 +111,33 @@ class TargetResolver:
         )
 
     def _clone_repository(self, target: str, destination: Path) -> None:
-        subprocess.run(
-            ["git", "clone", target, str(destination)],
-            check=True,
-        )
+        with hardened_git_runtime() as (command_prefix, environment):
+            subprocess.run(
+                [
+                    *command_prefix,
+                    "-c",
+                    "credential.helper=",
+                    "clone",
+                    "--depth=1",
+                    "--single-branch",
+                    "--no-tags",
+                    "--",
+                    target,
+                    str(destination),
+                ],
+                check=True,
+                env=environment,
+                timeout=self.CLONE_TIMEOUT_SECONDS,
+            )
 
     def _ask_yes_no(self, prompt: str) -> bool:
         while True:
             typer.echo(prompt, nl=False, err=True)
-            answer = input().strip().lower()
+            try:
+                answer = input().strip().lower()
+            except EOFError:
+                typer.echo("Interactive confirmation is required for remote repositories.", err=True)
+                raise typer.Exit(code=2) from None
             if answer in {"y", "yes"}:
                 return True
             if answer in {"n", "no"}:
@@ -146,7 +180,8 @@ class TargetResolver:
             },
         )
         try:
-            with urlopen(request, timeout=10) as response:
+            # repository.api_url is synthesized from a strict https://github.com/{owner}/{repo} target.
+            with urlopen(request, timeout=10) as response:  # nosec B310
                 if response.status == 200:
                     return "exists"
         except HTTPError as error:
@@ -162,12 +197,12 @@ class TargetResolver:
 
     def _print_remote_not_found(self, target: str) -> None:
         typer.echo("Error: Repository not found", err=True)
-        typer.echo(target, err=True)
+        typer.echo(terminal_safe_text(target), err=True)
         typer.echo("Make sure the repository exists and is publicly accessible.", err=True)
 
     def _print_remote_not_accessible(self, target: str) -> None:
         typer.echo("Error: Repository is not accessible", err=True)
-        typer.echo(target, err=True)
+        typer.echo(terminal_safe_text(target), err=True)
         typer.echo("Only public repositories are supported.", err=True)
 
     def _print_stage(self, step: int, message: str) -> None:
@@ -175,5 +210,5 @@ class TargetResolver:
 
     def _print_repository_reference(self, target: str) -> None:
         typer.echo("Repository", err=True)
-        typer.echo(f"  {target}", err=True)
+        typer.echo(f"  {terminal_safe_text(target)}", err=True)
         typer.echo("", err=True)

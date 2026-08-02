@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from explain_codebase.scanner.project_scanner import ProjectScanner
 
 
@@ -56,3 +58,22 @@ def test_scanner_uses_git_tracked_files_only(monkeypatch, tmp_path: Path) -> Non
     files = ProjectScanner().scan(tmp_path)
 
     assert _relative_paths(tmp_path, files) == {"app.py"}
+
+
+def test_scanner_rejects_missing_project_root(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="Project root is not a directory"):
+        ProjectScanner().scan(tmp_path / "missing")
+
+
+def test_scanner_prunes_directory_reparse_points(monkeypatch, tmp_path: Path) -> None:
+    _write(tmp_path / "main.py", "VALUE = 1\n")
+    _write(tmp_path / "redirected" / "outside.py", "OUTSIDE = True\n")
+
+    monkeypatch.setattr(
+        "explain_codebase.scanner.project_scanner.is_link_or_reparse_point",
+        lambda path: path.name == "redirected",
+    )
+
+    files = ProjectScanner().scan(tmp_path)
+
+    assert _relative_paths(tmp_path, files) == {"main.py"}

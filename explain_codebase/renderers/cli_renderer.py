@@ -1,19 +1,19 @@
 from __future__ import annotations
 
 from collections import OrderedDict
-from pathlib import Path
 
 from rich.console import Console
 
 from explain_codebase.models.analysis_result import AnalysisResult, FileExplanation
+from explain_codebase.utils.output_utils import terminal_safe_text
 
 
 class CliRenderer:
-    HEADER = "Explain Codebase\n" + ("─" * 32)
+    HEADER = "Explain Codebase\n" + ("-" * 32)
     DEFAULT_LIST_LIMIT = 10
 
     def render(self, result: AnalysisResult, verbose: bool = False, deep: bool = False) -> None:
-        console = Console()
+        console = Console(markup=False)
         console.print(self.HEADER)
         console.print()
 
@@ -42,9 +42,10 @@ class CliRenderer:
     def render_repository_section(self, console: Console, result: AnalysisResult) -> None:
         console.print("Repository")
         console.print()
-        console.print(f"  Path        {result.project_root}")
-        console.print(f"  Type        {result.project_type}")
-        console.print(f"  Language    {', '.join(result.languages) or 'unknown'}")
+        console.print(f"  Path        {terminal_safe_text(result.project_root)}")
+        console.print(f"  Type        {terminal_safe_text(result.project_type)}")
+        languages = ", ".join(terminal_safe_text(language) for language in result.languages)
+        console.print(f"  Language    {languages or 'unknown'}")
         console.print(f"  Files       {result.total_files}")
         console.print()
 
@@ -59,14 +60,14 @@ class CliRenderer:
     def render_suggested_starting_point(self, console: Console, result: AnalysisResult) -> None:
         console.print("Suggested starting point")
         console.print()
-        console.print(f"  {self._suggested_starting_point(result)}")
+        console.print(f"  {terminal_safe_text(self._suggested_starting_point(result))}")
 
     def render_entrypoints(self, console: Console, result: AnalysisResult) -> None:
         console.print()
         console.print("Entrypoints")
         console.print()
         for item in self._limit_list(result.entrypoints):
-            console.print(f"  {item}")
+            console.print(f"  {terminal_safe_text(item)}")
         if not result.entrypoints:
             console.print("  None detected")
 
@@ -77,7 +78,7 @@ class CliRenderer:
         console.print()
         if result.core_module_rankings:
             for item in result.core_module_rankings[: self.DEFAULT_LIST_LIMIT]:
-                console.print(f"  {item.path}")
+                console.print(f"  {terminal_safe_text(item.path)}")
         else:
             console.print("  None detected")
 
@@ -87,7 +88,7 @@ class CliRenderer:
         console.print(title)
         console.print()
         for item in self._limit_list(result.side_effect_modules):
-            console.print(f"  {item}")
+            console.print(f"  {terminal_safe_text(item)}")
         if not result.side_effect_modules:
             console.print("  None detected")
 
@@ -107,7 +108,10 @@ class CliRenderer:
         title = self._title_with_limit("File roles", len(result.file_roles))
         console.print(title)
         console.print()
-        items = list(sorted(result.file_roles.items()))[: self.DEFAULT_LIST_LIMIT]
+        items = [
+            (terminal_safe_text(path), terminal_safe_text(role))
+            for path, role in sorted(result.file_roles.items())[: self.DEFAULT_LIST_LIMIT]
+        ]
         if not items:
             console.print("  None detected")
             return
@@ -122,8 +126,8 @@ class CliRenderer:
         console.print()
         if result.architecture_issues:
             for issue in result.architecture_issues[: self.DEFAULT_LIST_LIMIT]:
-                console.print(self._format_issue_title(issue.issue_type))
-                console.print(f"  {self._format_issue_body(issue.issue_type, issue.description)}")
+                console.print(terminal_safe_text(self._format_issue_title(issue.issue_type)))
+                console.print(f"  {terminal_safe_text(self._format_issue_body(issue.issue_type, issue.description))}")
                 console.print()
         else:
             console.print("  No architecture issues detected")
@@ -133,7 +137,7 @@ class CliRenderer:
         console.print()
         if result.large_files:
             for item in result.large_files[: self.DEFAULT_LIST_LIMIT]:
-                console.print(f"  {item.path} ({item.loc} LOC)")
+                console.print(f"  {terminal_safe_text(item.path)} ({item.loc} LOC)")
         else:
             console.print("  None detected")
 
@@ -142,34 +146,34 @@ class CliRenderer:
         console.print()
         if result.hotspots:
             for item in result.hotspots[: self.DEFAULT_LIST_LIMIT]:
-                console.print(f"  {item.path}")
+                console.print(f"  {terminal_safe_text(item.path)}")
         else:
             console.print("  None detected")
 
     def render_onboarding(self, project_root: str, onboarding_path: list[str]) -> None:
-        console = Console()
+        console = Console(markup=False)
         console.print(self.HEADER)
         console.print()
         console.print("Repository")
         console.print()
-        console.print(f"  Path        {project_root}")
+        console.print(f"  Path        {terminal_safe_text(project_root)}")
         console.print()
         console.print("Suggested starting points")
         console.print()
         if onboarding_path:
             for index, path in enumerate(onboarding_path, start=1):
-                console.print(f"  {index}. {path}")
+                console.print(f"  {index}. {terminal_safe_text(path)}")
         else:
             console.print("  No recommended reading path inferred")
 
     def render_file_explanation(self, explanation: FileExplanation) -> None:
-        console = Console()
+        console = Console(markup=False)
         console.print(self.HEADER)
         console.print()
         console.print("File")
         console.print()
-        console.print(f"  Path        {explanation.path}")
-        console.print(f"  Role        {explanation.role}")
+        console.print(f"  Path        {terminal_safe_text(explanation.path)}")
+        console.print(f"  Role        {terminal_safe_text(explanation.role)}")
         console.print(f"  Lines       {explanation.line_count}")
         console.print(f"  Used by     {explanation.incoming_imports}")
         console.print(f"  Depends on  {explanation.outgoing_imports}")
@@ -183,7 +187,7 @@ class CliRenderer:
         console.print()
         if values:
             for value in values[: self.DEFAULT_LIST_LIMIT]:
-                console.print(f"  {value}")
+                console.print(f"  {terminal_safe_text(value)}")
         else:
             console.print("  None detected")
         console.print()
@@ -217,7 +221,7 @@ class CliRenderer:
         lines: list[str] = []
         root_items = list(tree.items())[: self.DEFAULT_LIST_LIMIT]
         for index, (root, children) in enumerate(root_items):
-            lines.append(root)
+            lines.append(terminal_safe_text(root))
             lines.extend(self._render_tree_children(children, prefix=""))
             if index < len(root_items) - 1:
                 lines.append("")
@@ -228,9 +232,9 @@ class CliRenderer:
         items = list(children.items())[: self.DEFAULT_LIST_LIMIT]
         for index, (name, subtree) in enumerate(items):
             is_last = index == len(items) - 1
-            branch = "└─ " if is_last else "├─ "
-            lines.append(f"{prefix}{branch}{name}")
-            child_prefix = f"{prefix}{'   ' if is_last else '│  '}"
+            branch = "`- " if is_last else "|- "
+            lines.append(f"{prefix}{branch}{terminal_safe_text(name)}")
+            child_prefix = f"{prefix}{'   ' if is_last else '|  '}"
             lines.extend(self._render_tree_children(subtree, child_prefix))
         return lines
 

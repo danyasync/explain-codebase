@@ -4,12 +4,10 @@ import pytest
 import typer
 from click.testing import CliRunner
 
-from explain_codebase.cli.main import Analyzer
-from explain_codebase.cli.main import app
+from explain_codebase.cli.main import Analyzer, app, run
 from explain_codebase.cli.main import main as cli_main
-from explain_codebase.cli.main import run
 from explain_codebase.cli.target_resolution import TargetResolver
-
+from explain_codebase.models.analysis_result import AnalysisResult, ArchitectureIssue
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 
@@ -313,6 +311,36 @@ def test_ci_mode_fails_on_architecture_issues(tmp_path) -> None:
         )
 
     assert exc_info.value.exit_code == 1
+
+
+def test_ci_mode_escapes_terminal_controls_in_issue_descriptions(monkeypatch, tmp_path, capsys) -> None:
+    (tmp_path / "main.py").write_text("VALUE = 1\n", encoding="utf-8")
+    description = "Cycle includes evil\x1b]52;c;payload\x1b\\\r\nspoof.py"
+    result = AnalysisResult(
+        project_root=str(tmp_path),
+        project_type="test",
+        total_files=1,
+        architecture_issues=[ArchitectureIssue(issue_type="cycle", description=description)],
+        summary="test",
+    )
+    monkeypatch.setattr(Analyzer, "generate_explanation", lambda self, project, graph: result)
+
+    with pytest.raises(typer.Exit):
+        cli_main(
+            target=str(tmp_path),
+            extra_args=[],
+            json_output=True,
+            verbose=False,
+            max_files=None,
+            graph=False,
+            report=False,
+            ci=True,
+        )
+
+    error_output = capsys.readouterr().err
+    assert "\x1b" not in error_output
+    assert "\r" not in error_output
+    assert r"evil\x1b]52;c;payload\x1b\\r\nspoof.py" in error_output
 
 
 def test_help_output_uses_plain_cli_style() -> None:
