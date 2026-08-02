@@ -3,33 +3,33 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from explain_codebase.models.file_info import FileInfo
+from explain_codebase.utils.file_utils import safe_read_text
+
 
 class ProjectTypeDetector:
-    def detect(self, root_path: Path, languages: list[str]) -> str:
+    PYTHON_CLI_MODULES = {"argparse", "click", "typer"}
+    PYTHON_BACKEND_MODULES = {"django", "fastapi", "flask", "sqlalchemy"}
+
+    def detect(self, root_path: Path, languages: list[str], files: list[FileInfo] | None = None) -> str:
+        files = files or []
         package_json = root_path / "package.json"
-        pyproject_toml = root_path / "pyproject.toml"
-        requirements = root_path / "requirements.txt"
 
         if "python" in languages:
-            if self._is_python_cli(root_path):
+            if self._is_python_cli(files):
                 return "Python CLI tool"
-            if (
-                pyproject_toml.exists()
-                or requirements.exists()
-                or (root_path / "manage.py").exists()
-                or (root_path / "app.py").exists()
-                or (root_path / "main.py").exists()
-                or self._has_python_backend_signals(root_path)
-            ):
+            if self._has_python_backend_signals(files):
                 return "Python backend service"
 
         if "javascript" in languages or "typescript" in languages:
             if package_json.exists():
                 package_data = self._read_package_json(package_json)
-                deps = " ".join(
-                    list(package_data.get("dependencies", {}).keys())
-                    + list(package_data.get("devDependencies", {}).keys())
-                ).lower()
+                dependency_names: list[str] = []
+                for section_name in ("dependencies", "devDependencies"):
+                    section = package_data.get(section_name)
+                    if isinstance(section, dict):
+                        dependency_names.extend(str(name) for name in section)
+                deps = " ".join(dependency_names).lower()
                 if any(signal in deps for signal in ["react", "next", "vite"]):
                     return "Frontend application"
                 if any(signal in deps for signal in ["express", "fastify", "nestjs"]):
@@ -40,30 +40,30 @@ class ProjectTypeDetector:
 
         return "Unknown project"
 
-    def _is_python_cli(self, root_path: Path) -> bool:
-        for path in root_path.rglob("*.py"):
-            try:
-                content = path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                content = path.read_text(encoding="utf-8", errors="ignore")
-            lowered = content.lower()
-            if any(signal in lowered for signal in ["import typer", "import click", "import argparse"]):
+    def _is_python_cli(self, files: list[FileInfo]) -> bool:
+        for file in files:
+            if file.has_cli_signal:
+                return True
+            imported_roots = {module.lstrip(".").split(".", 1)[0].lower() for module in file.imports}
+            if file.role == "entrypoint" and imported_roots.intersection(self.PYTHON_CLI_MODULES):
                 return True
         return False
 
-    def _read_package_json(self, path: Path) -> dict:
-        try:
-            return json.loads(path.read_text(encoding="utf-8"))
-        except Exception:
+    def _read_package_json(self, path: Path) -> dict[str, object]:
+        content = safe_read_text(path, root_path=path.parent)
+        if not content:
             return {}
+        try:
+            data = json.loads(content)
+        except json.JSONDecodeError:
+            return {}
+        return data if isinstance(data, dict) else {}
 
-    def _has_python_backend_signals(self, root_path: Path) -> bool:
-        for path in root_path.rglob("*.py"):
-            try:
-                content = path.read_text(encoding="utf-8")
-            except UnicodeDecodeError:
-                content = path.read_text(encoding="utf-8", errors="ignore")
-            lowered = content.lower()
-            if any(signal in lowered for signal in ["fastapi", "flask", "django", "sqlalchemy", "app = "]):
+    def _has_python_backend_signals(self, files: list[FileInfo]) -> bool:
+        for file in files:
+            imported_roots = {module.lstrip(".").split(".", 1)[0].lower() for module in file.imports}
+            if imported_roots.intersection(self.PYTHON_BACKEND_MODULES):
+                return True
+            if file.route_handlers:
                 return True
         return False

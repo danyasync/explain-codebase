@@ -6,10 +6,15 @@ from dataclasses import dataclass
 from html import escape
 from math import log1p
 from pathlib import Path
+from secrets import token_urlsafe
 
 import networkx as nx
 
 from explain_codebase.models.analysis_result import AnalysisResult
+from explain_codebase.utils.output_utils import atomic_write_text
+
+VIS_NETWORK_URL = "https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"
+VIS_NETWORK_SRI = "sha384-6ox9IspbVlrc5vabD45kZcCJ8HeSwMAQjf9Iq48U/+srTVTNzsB7EqDC5oYpA0WC"
 
 
 @dataclass(frozen=True)
@@ -51,7 +56,7 @@ class GraphRenderer:
         options: GraphViewOptions | None = None,
     ) -> Path:
         html = self._build_graph_document(result, graph, title="Dependency Graph", options=options or GraphViewOptions())
-        output_path.write_text(html, encoding="utf-8")
+        atomic_write_text(output_path, html)
         return output_path
 
     def build_graph_fragment(
@@ -60,10 +65,11 @@ class GraphRenderer:
         graph: nx.DiGraph,
         container_id: str,
         options: GraphViewOptions | None = None,
+        script_nonce: str | None = None,
     ) -> str:
         options = options or GraphViewOptions()
         payload_json = json.dumps(self._build_payload(result, graph, options)).replace("</", "<\\/")
-        return self._build_fragment_markup(container_id, payload_json)
+        return self._build_fragment_markup(container_id, payload_json, script_nonce=script_nonce)
 
     def _build_graph_document(
         self,
@@ -72,11 +78,20 @@ class GraphRenderer:
         title: str,
         options: GraphViewOptions,
     ) -> str:
-        fragment = self.build_graph_fragment(result, graph, container_id="dependency-graph", options=options)
+        script_nonce = token_urlsafe(24)
+        fragment = self.build_graph_fragment(
+            result,
+            graph,
+            container_id="dependency-graph",
+            options=options,
+            script_nonce=script_nonce,
+        )
+        content_security_policy = self.content_security_policy(script_nonce)
         return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="{content_security_policy}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{escape(title)}</title>
   <style>
@@ -116,7 +131,17 @@ class GraphRenderer:
 </html>
 """
 
-    def _build_fragment_markup(self, container_id: str, payload_json: str) -> str:
+    @staticmethod
+    def content_security_policy(script_nonce: str) -> str:
+        return (
+            "default-src 'none'; "
+            f"script-src 'nonce-{script_nonce}'; "
+            "style-src 'unsafe-inline'; img-src data:; connect-src 'none'; "
+            "font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+        )
+
+    def _build_fragment_markup(self, container_id: str, payload_json: str, script_nonce: str | None = None) -> str:
+        nonce_attribute = f' nonce="{escape(script_nonce, quote=True)}"' if script_nonce else ""
         return f"""
 <div class="ecb-shell" id="{container_id}-shell">
   <style>
@@ -394,8 +419,8 @@ class GraphRenderer:
     <div class="ecb-overlay-note">Hover a node to spotlight its neighborhood. Click to pin the focus, then export the current view as PNG.</div>
   </div>
 </div>
-<script src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
-<script>
+<script src="{VIS_NETWORK_URL}" integrity="{VIS_NETWORK_SRI}" crossorigin="anonymous" referrerpolicy="no-referrer"{nonce_attribute}></script>
+<script{nonce_attribute}>
 (function() {{
   const payload = {payload_json};
   const shell = document.getElementById("{container_id}-shell");
@@ -1374,8 +1399,10 @@ class GraphRenderer:
         return selected
 
     def _top_keys(self, scores: dict[str, int], limit: int, required: set[str]) -> set[str]:
+        if limit <= 0:
+            return set()
         required = {item for item in required if item in scores}
-        selected = list(sorted(required, key=lambda item: (-scores[item], item)))
+        selected = list(sorted(required, key=lambda item: (-scores[item], item)))[:limit]
         for item in sorted(scores, key=lambda key: (-scores[key], key)):
             if item in required:
                 continue

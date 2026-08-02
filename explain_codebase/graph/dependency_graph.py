@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from pathlib import Path
+from pathlib import PurePosixPath
 
 import networkx as nx
 
@@ -8,6 +8,20 @@ from explain_codebase.models.file_info import FileInfo
 
 
 class DependencyGraphBuilder:
+    MODULE_EXTENSIONS = (".py", ".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts")
+    INDEX_FILES = (
+        "__init__.py",
+        "index.js",
+        "index.jsx",
+        "index.mjs",
+        "index.cjs",
+        "index.ts",
+        "index.tsx",
+        "index.mts",
+        "index.cts",
+    )
+    JAVASCRIPT_EXTENSIONS = {".js", ".jsx", ".mjs", ".cjs", ".ts", ".tsx", ".mts", ".cts"}
+
     def build(self, files: list[FileInfo]) -> nx.DiGraph:
         graph = nx.DiGraph()
         path_map = {file.path: file for file in files}
@@ -26,7 +40,7 @@ class DependencyGraphBuilder:
     def _build_module_index(self, files: list[FileInfo]) -> dict[str, str]:
         index: dict[str, str] = {}
         for file in files:
-            path = Path(file.path)
+            path = PurePosixPath(file.path)
             parts = list(path.with_suffix("").parts)
             dotted = ".".join(parts)
             index[dotted] = file.path
@@ -41,7 +55,7 @@ class DependencyGraphBuilder:
         module_index: dict[str, str],
         path_map: dict[str, FileInfo],
     ) -> str | None:
-        source = Path(source_path)
+        source = PurePosixPath(source_path)
         if imported.startswith("."):
             return self._resolve_relative_import(source, imported, path_map)
 
@@ -50,45 +64,64 @@ class DependencyGraphBuilder:
             return module_index[normalized]
 
         candidate = imported.replace(".", "/")
-        for extension in [".py", ".js", ".ts"]:
+        for extension in self.MODULE_EXTENSIONS:
             file_candidate = f"{candidate}{extension}"
             if file_candidate in path_map:
                 return file_candidate
-        for extension in ["/__init__.py", "/index.js", "/index.ts"]:
-            file_candidate = f"{candidate}{extension}"
+        for index_file in self.INDEX_FILES:
+            file_candidate = f"{candidate}/{index_file}"
             if file_candidate in path_map:
                 return file_candidate
         return None
 
     def _resolve_relative_import(
         self,
-        source: Path,
+        source: PurePosixPath,
         imported: str,
         path_map: dict[str, FileInfo],
     ) -> str | None:
+        if source.suffix.lower() in self.JAVASCRIPT_EXTENSIONS:
+            target_base = self._resolve_javascript_relative_base(source, imported)
+        else:
+            target_base = self._resolve_python_relative_base(source, imported)
+        if target_base is None:
+            return None
+
+        candidates = [target_base.as_posix()]
+        candidates.extend(f"{target_base.as_posix()}{extension}" for extension in self.MODULE_EXTENSIONS)
+        candidates.extend((target_base / index_file).as_posix() for index_file in self.INDEX_FILES)
+        for candidate in candidates:
+            if candidate in path_map:
+                return candidate
+        return None
+
+    def _resolve_python_relative_base(self, source: PurePosixPath, imported: str) -> PurePosixPath | None:
         dots = len(imported) - len(imported.lstrip("."))
         remainder = imported.lstrip(".")
-        base = source.parent
+        base_parts = list(source.parent.parts)
         for _ in range(max(dots - 1, 0)):
-            base = base.parent
+            if len(base_parts) <= 1:
+                return None
+            base_parts.pop()
 
         if "/" in remainder or "\\" in remainder:
             cleaned = remainder.lstrip("/\\")
-            relative_parts = [part for part in Path(cleaned).parts if part not in {".", ""}]
+            relative_parts = [part for part in PurePosixPath(cleaned.replace("\\", "/")).parts if part not in {".", ""}]
         else:
             relative_parts = [part for part in remainder.split(".") if part]
-        target_base = base.joinpath(*relative_parts) if relative_parts else base
+        base = PurePosixPath(*base_parts)
+        return base.joinpath(*relative_parts) if relative_parts else base
 
-        candidates = [
-            target_base.with_suffix(".py"),
-            target_base.with_suffix(".js"),
-            target_base.with_suffix(".ts"),
-            target_base / "__init__.py",
-            target_base / "index.js",
-            target_base / "index.ts",
-        ]
-        for candidate in candidates:
-            candidate_str = candidate.as_posix()
-            if candidate_str in path_map:
-                return candidate_str
-        return None
+    def _resolve_javascript_relative_base(self, source: PurePosixPath, imported: str) -> PurePosixPath | None:
+        parts = list(source.parent.parts)
+        for part in PurePosixPath(imported.replace("\\", "/")).parts:
+            if part in {"", "."}:
+                continue
+            if part == "..":
+                if parts:
+                    parts.pop()
+                else:
+                    return None
+                continue
+            parts.append(part)
+        return PurePosixPath(*parts)

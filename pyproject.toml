@@ -1,14 +1,47 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
 name = "explain-codebase"
-version = "0.1.4"
-description = "CLI tool for explaining unfamiliar codebases."
-readme = "README.md"
+version = "0.2.0"
+description = "Map repository architecture, dependencies, entry points, and change-risk signals from the command line."
+readme = { file = "README.md", content-type = "text/markdown" }
 requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [
+  { name = "danyasync" },
+]
+keywords = [
+  "architecture",
+  "code-analysis",
+  "dependency-graph",
+  "developer-tools",
+  "onboarding",
+  "repository-analysis",
+  "static-analysis",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Topic :: Software Development",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Version Control :: Git",
+  "Topic :: Utilities",
+]
 dependencies = [
+  "click>=8.1",
   "networkx>=3.3",
   "pathspec>=0.12",
   "pydantic>=2.7",
@@ -18,14 +51,33 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+  "build>=1.2",
   "pytest>=8.2",
+  "readme-renderer[md]>=44",
+  "ruff>=0.9",
+  "twine>=6.0",
 ]
 
 [project.scripts]
 explain-codebase = "explain_codebase.cli.main:run"
+
+[project.urls]
+Homepage = "https://github.com/danyasync/explain-codebase"
+Repository = "https://github.com/danyasync/explain-codebase"
+Issues = "https://github.com/danyasync/explain-codebase/issues"
+Changelog = "https://github.com/danyasync/explain-codebase/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["explain_codebase"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+extend-exclude = ["fixtures"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "SIM"]
+ignore = ["E501"]

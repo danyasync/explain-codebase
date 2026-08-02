@@ -7,7 +7,13 @@ class LanguageDetector:
     EXTENSION_TO_LANGUAGE = {
         ".py": "python",
         ".js": "javascript",
+        ".jsx": "javascript",
+        ".mjs": "javascript",
+        ".cjs": "javascript",
         ".ts": "typescript",
+        ".tsx": "typescript",
+        ".mts": "typescript",
+        ".cts": "typescript",
     }
 
     def detect(self, path: Path) -> str:

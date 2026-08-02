@@ -1,139 +1,31 @@
 # Explain Codebase
 
-CLI tool for quickly mapping the architecture of an unfamiliar repository.
+[![PyPI version](https://img.shields.io/pypi/v/explain-codebase.svg)](https://pypi.org/project/explain-codebase/)
+[![Python versions](https://img.shields.io/pypi/pyversions/explain-codebase.svg)](https://pypi.org/project/explain-codebase/)
+[![CI](https://github.com/danyasync/explain-codebase/actions/workflows/ci.yml/badge.svg)](https://github.com/danyasync/explain-codebase/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/danyasync/explain-codebase/blob/main/LICENSE)
 
-`explain-codebase` is a heuristic static-analysis CLI that helps developers find likely entrypoints, central modules, side-effect files, and risky areas in a codebase.
+Static-analysis CLI for mapping repository architecture, dependencies, entry points, side effects, and change risk.
 
-It is designed for onboarding and architecture review. It works with local folders and public GitHub repositories, and it aims to give you a useful architectural map quickly rather than perfectly understand every code path.
+`explain-codebase` helps you find where execution starts, which files are central, how source files depend on one another, and where a change is likely to have the widest impact. It reads source files without importing or running the target project.
 
-## Why
+## Quick start
 
-When you open a new repository, the first questions are usually:
-
-- where execution starts
-- which modules are central
-- which files touch the database, network, filesystem, or cache
-- what files are risky to change
-- where to begin onboarding
-
-`explain-codebase` scans the project, builds a dependency graph, and turns those signals into a compact CLI summary.
-
-## Changelog
-
-### v0.1.2
-
-This release improves repository scanning by making the analyzer Git-aware.
-
-What's new:
-
-- supports `.gitignore`-aware scanning
-- analyzes only files tracked by Git when the target is a Git repository
-- ignores common noise directories such as `.venv`, `node_modules`, `dist`, `build`, `coverage`, and `__pycache__`
-- produces cleaner dependency graphs and more accurate architecture summaries
-- prevents generated and local-only files from polluting graph and report outputs
-
-This makes the tool much more useful on real-world repositories by excluding ignored, temporary, and untracked files from the analysis.
-
-### v0.1.4
-
-Improved dependency graph visualization.
-
-What’s new:
-
-- Redesigned dependency graph with a cleaner, more readable layout
-- Improved node spacing and reduced visual noise
-- Better handling of large repositories
-- Smoother interactions and graph rendering
-
-The graph is now easier to read and better represents the structure of real-world codebases.
-
-## Installation
-
-### Requirements
-
-- Python 3.10+
-- Git, if you want to analyze remote GitHub repositories
-- Best current support: Python, JavaScript, and TypeScript repositories
-
-### Install from PyPI
+Install from PyPI and inspect the current directory:
 
 ```bash
-pip install explain-codebase
-```
-
-### For local development
-
-```bash
-pip install -e .[dev]
-```
-
-## Commands
-
-### Overview
-
-Use this when you want a quick architectural snapshot of a repository:
-
-```bash
+python -m pip install explain-codebase
 explain-codebase .
 ```
 
-### Detailed analysis
-
-Use verbose mode when you want to inspect the likely architecture structure in more detail:
+For an isolated command-line installation, use `pipx`:
 
 ```bash
-explain-codebase . --verbose
+pipx install explain-codebase
+explain-codebase .
 ```
 
-Use deep mode when you want to focus on architectural risks and potential maintenance problems:
-
-```bash
-explain-codebase . --deep
-```
-
-### File explanation
-
-Use this when you want to understand one specific file in project context:
-
-```bash
-explain-codebase file src/services/api_server.py
-```
-
-### Onboarding path
-
-Use this when a new developer needs a suggested reading order:
-
-```bash
-explain-codebase onboarding .
-```
-
-### Graph and report
-
-Generate an interactive dependency graph:
-
-```bash
-explain-codebase . --graph
-```
-
-Generate a full HTML architecture report:
-
-```bash
-explain-codebase . --report
-```
-
-### CI mode
-
-Use this in CI when you want architecture issues to fail the build:
-
-```bash
-explain-codebase . --ci
-```
-
-## Example Output
-
-### Default output
-
-Default output is intentionally compact:
+The default view is intentionally compact:
 
 ```text
 Explain Codebase
@@ -159,114 +51,191 @@ Suggested starting point
 Run with --verbose to see full architecture
 ```
 
-### Verbose output
+## What it shows
 
-Verbose mode adds more structure, including a likely execution path:
+- likely application entry points
+- central modules ranked by dependency usage
+- relative and package import relationships
+- probable execution paths
+- files that interact with databases, networks, filesystems, or caches
+- common architecture areas such as services, repositories, routes, and controllers
+- large files, highly connected files, circular dependencies, and risky change points
+- a suggested reading order for onboarding
+- focused dependency graphs and an HTML architecture report
 
-```text
-Execution flow
+The results are heuristic signals intended to shorten initial investigation. They are not a substitute for reading critical code paths or running the target project's own checks.
 
-api_server.py
-|- routes/order_routes.py
-|- services/order_service.py
-|  |- repositories/order_repository.py
-|  \- clients/warehouse_client.py
-\- middleware/auth_guard.py
-```
+## Installation
 
-This output is heuristic. It reflects likely structure based on static signals such as imports, naming conventions, and folder layout. It should be treated as a high-value map, not as guaranteed truth.
+### Requirements
 
-## Features
+- Python 3.10 or newer
+- Git when inspecting a public GitHub repository
+- network access for remote repository checks and cloning
 
-- analyzes local folders and public GitHub repositories
-- detects project language and project type
-- attempts to detect likely entrypoints automatically
-- ranks central modules by dependency usage
-- surfaces likely execution paths
-- highlights modules that interact with database, network, filesystem, or cache
-- detects common architecture folders such as `services`, `repositories`, `routes`, and `models`
-- flags large modules and highly coupled files
-- highlights potential architecture issues such as circular dependencies
-- generates dependency graph visualizations
-- generates HTML architecture reports
-- explains a single file in project context
-- suggests onboarding reading paths
-- supports CI mode for architecture checks
-
-## Remote Repositories
-
-You can analyze a public GitHub repository directly:
+### From PyPI
 
 ```bash
-explain-codebase https://github.com/user/repo
+python -m pip install explain-codebase
 ```
 
-For remote repositories, the tool:
+### Isolated CLI installation
 
-- supports public GitHub repository URLs
-- clones the repository into a temporary workspace
-- cleans up that workspace after analysis
+```bash
+pipx install explain-codebase
+```
 
-## How It Works
+### Local development
 
-At a high level, the tool:
+```bash
+python -m pip install -e ".[dev]"
+```
 
-- scans source files in the target repository
-- detects language and likely project type
-- parses imports and builds a dependency graph
-- scores central modules using graph signals
-- surfaces likely entrypoints, side effects, hotspots, and onboarding hints
-- renders the result in CLI, JSON, and optional HTML outputs
+## Usage
 
-## Limitations
+### Common commands
 
-- the analysis is heuristic, not full semantic understanding
-- best results come from Python, JavaScript, and TypeScript projects with conventional layouts
-- dynamic imports, reflection-heavy code, and runtime dependency injection may reduce accuracy
-- generated, vendored, or mirrored code can reduce signal quality
-- large monorepos may need path scoping or `--max-files` to keep output focused
+| Goal | Command |
+| --- | --- |
+| Inspect the current directory | `explain-codebase .` |
+| Inspect another local directory | `explain-codebase path/to/repository` |
+| Show the detailed architecture view | `explain-codebase . --verbose` |
+| Focus on architecture risks | `explain-codebase . --deep` |
+| Write JSON to stdout | `explain-codebase . --json` |
+| Limit the number of scanned files | `explain-codebase . --max-files 500` |
+| Suggest a reading order | `explain-codebase onboarding .` |
+| Explain one file in repository context | `explain-codebase file src/services/orders.py` |
+| Write an interactive dependency graph | `explain-codebase . --graph` |
+| Write an HTML architecture report | `explain-codebase . --report` |
+| Return a failing status for detected architecture issues | `explain-codebase . --ci` |
+| Show the installed version | `explain-codebase --version` |
 
-## CI Behavior
+`--verbose` and `--deep` cannot be combined.
 
-CI mode is intended for lightweight architectural checks:
+### Graph views
+
+`--graph` writes `dependency_graph.html`. `--report` writes `codebase_report.html`. Both files are written to the current working directory.
+
+| Flag | View |
+| --- | --- |
+| `--architecture` | Architecture-level relationships; this is the default graph view |
+| `--full` | Full file-level dependency graph |
+| `--entrypoint` | Paths starting from likely entry points |
+| `--risk` | Highly connected and risky files |
+| `--side-effects` | Files with probable external side effects |
+
+Choose at most one graph-view flag. A graph-view flag requires `--graph` or `--report`.
+
+Examples:
+
+```bash
+explain-codebase . --graph --architecture
+explain-codebase . --graph --entrypoint
+explain-codebase . --report --risk
+explain-codebase . --graph --full
+```
+
+## Supported source formats
+
+| Language | Extensions | Primary signals |
+| --- | --- | --- |
+| Python | `.py` | syntax tree, imports, definitions, calls, and side effects |
+| JavaScript | `.js`, `.jsx`, `.mjs`, `.cjs` | static imports, CommonJS imports, calls, and side effects |
+| TypeScript | `.ts`, `.tsx`, `.mts`, `.cts` | static imports, calls, and side effects |
+
+Import resolution accounts for relative paths, package entry files, and the supported extension variants where those relationships can be determined statically.
+
+## Scanning behavior
+
+For a local directory, the scanner:
+
+- considers only the supported source extensions
+- keeps resolved file paths inside the selected repository
+- honors the optional file-count limit and a 1 MiB per-file size limit
+- skips common dependency, cache, build, coverage, and environment directories
+- respects the root `.gitignore` file
+- limits a Git worktree to tracked files when Git metadata can be read, then falls back to filesystem scanning if Git is unavailable
+- handles unreadable source files safely and skips unsupported or oversized files
+
+Use `--max-files` to lower the file-count limit for a focused or faster scan.
+
+## Public GitHub repositories
+
+Pass a public repository URL in the canonical form:
+
+```bash
+explain-codebase https://github.com/owner/repository
+```
+
+The CLI checks public repository metadata, asks for confirmation, performs a limited clone in a temporary directory, analyzes the clone, and removes the temporary directory afterward. Private repositories, other hosting providers, and arbitrary Git URLs are not supported.
+
+Remote inspection requires an interactive terminal, Git, and network access. Clone timeouts can stop remote preparation, and oversized source files are skipped during analysis.
+
+## Output and automation
+
+### Standard output and error output
+
+Human-readable output and JSON are written to stdout. Progress stages, warnings, and errors are written to stderr. This keeps JSON suitable for redirection:
+
+```bash
+explain-codebase . --json > architecture.json
+```
+
+### CI mode
 
 ```bash
 explain-codebase . --ci
 ```
 
-Current behavior:
+CI mode exits with status `0` when no architecture issues are found and status `1` when an issue is detected. Current issue checks include circular dependencies and utility-style god modules. Thresholds are built into the CLI.
 
-- exit code `0` when no architecture issues are detected
-- exit code `1` when architecture issues are found
-- current issue types include circular dependencies and utility-style god modules
-- thresholds are currently built into the tool and are not yet configurable through CLI flags
+### JSON
 
-## JSON Output
+JSON output includes repository information, entry points, central modules, side-effect files, architecture areas, large files, hotspots, risky files, architecture issues, execution paths, and paths to optional HTML outputs.
 
-Use JSON output when you want to integrate the tool into scripts or pipelines:
+## How it works
+
+At a high level, `explain-codebase`:
+
+1. resolves and validates the target
+2. selects supported source files within safety boundaries
+3. parses static imports and source-level signals
+4. resolves imports and builds a dependency graph
+5. ranks central modules and identifies entry points, side effects, hotspots, and architecture issues
+6. renders the selected CLI, JSON, graph, or report output
+
+The target project's source code is not imported or executed during analysis.
+
+## Limitations
+
+- Dynamic imports, reflection, runtime dependency injection, and framework-specific wiring may not be visible.
+- Custom path aliases and build-tool transformations may reduce import-resolution accuracy.
+- Syntax that is valid only after a separate transform step may be skipped.
+- Minified, vendored, mirrored, or highly repetitive code can reduce signal quality.
+- Large monorepos should use `--max-files` or analyze a narrower directory.
+- Remote analysis supports only public GitHub repositories.
+- A shallow remote clone can still transfer large files because total repository download size is not capped.
+- Interactive HTML views load a version-pinned, integrity-checked graph library from a public CDN and need network access when opened.
+
+## Development
+
+Install the development tools and run the checks:
 
 ```bash
-explain-codebase . --json
-```
-
-The JSON output includes fields such as:
-
-- `project_type`
-- `entrypoints`
-- `core_modules`
-- `core_module_rankings`
-- `side_effect_modules`
-- `architecture_modules`
-- `large_files`
-- `hotspots`
-- `dangerous_files`
-- `architecture_issues`
-- `execution_flow`
-- `dependency_graph_output`
-- `html_report_output`
-
-## Tests
-
-```bash
+python -m pip install -e ".[dev]"
+ruff check .
 pytest
+python -m build
+python -m twine check --strict dist/*
 ```
+
+## Project information
+
+- [Changelog](https://github.com/danyasync/explain-codebase/blob/main/CHANGELOG.md)
+- [Security policy](https://github.com/danyasync/explain-codebase/blob/main/SECURITY.md)
+- [Issue tracker](https://github.com/danyasync/explain-codebase/issues)
+- [PyPI package](https://pypi.org/project/explain-codebase/)
+
+## License
+
+Licensed under the [MIT License](https://github.com/danyasync/explain-codebase/blob/main/LICENSE).

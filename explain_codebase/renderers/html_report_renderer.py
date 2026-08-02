@@ -2,12 +2,13 @@ from __future__ import annotations
 
 from html import escape
 from pathlib import Path
+from secrets import token_urlsafe
 
 import networkx as nx
 
 from explain_codebase.models.analysis_result import AnalysisResult
-from explain_codebase.renderers.graph_renderer import GraphViewOptions
-from explain_codebase.renderers.graph_renderer import GraphRenderer
+from explain_codebase.renderers.graph_renderer import GraphRenderer, GraphViewOptions
+from explain_codebase.utils.output_utils import atomic_write_text
 
 
 class HtmlReportRenderer:
@@ -21,16 +22,20 @@ class HtmlReportRenderer:
         output_path: Path,
         graph_options: GraphViewOptions | None = None,
     ) -> Path:
+        script_nonce = token_urlsafe(24)
         graph_fragment = self.graph_renderer.build_graph_fragment(
             result,
             graph,
             container_id="architecture-graph",
             options=graph_options,
+            script_nonce=script_nonce,
         )
+        content_security_policy = self.graph_renderer.content_security_policy(script_nonce)
         html = f"""<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="{content_security_policy}">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Explain Codebase Report</title>
   <style>
@@ -182,7 +187,7 @@ class HtmlReportRenderer:
 </body>
 </html>
 """
-        output_path.write_text(html, encoding="utf-8")
+        atomic_write_text(output_path, html)
         return output_path
 
     def _list_html(self, values: list[str]) -> str:
