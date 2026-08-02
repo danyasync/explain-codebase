@@ -6,6 +6,23 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-08-02
+
+### Changed
+
+- Reworked the interactive dependency graph with a flat, minimal dark interface, compact controls, and a low-profile legend.
+- Switched every graph view to deterministic, cached node positions with stable curved edges and lightweight selection styling.
+- Reduced redraw work during search, filtering, hovering, zooming, and node selection.
+- Added a restrained ambient node pulse and directional edge flow without changing node coordinates.
+- Enabled manual node placement with bounded local collision resolution that moves only nearby overlapping nodes.
+
+### Fixed
+
+- Prevented nodes from drifting continuously or rearranging after clicks and pointer movement.
+- Removed physics restarts, moving edge support nodes, and overlapping camera animations that could make the graph jump or lag.
+- Kept search and filters from changing the coordinates of nodes that remain visible.
+- Prevented small pointer movement during a click from shifting a node by restoring its exact starting position.
+
 ## [0.2.0] - 2026-08-02
 
 ### Added
@@ -72,7 +89,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Published the initial command-line release with repository analysis, dependency graphs, JSON output, HTML reports, onboarding paths, and architecture checks.
 
-[Unreleased]: https://github.com/danyasync/explain-codebase/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/danyasync/explain-codebase/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/danyasync/explain-codebase/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/danyasync/explain-codebase/compare/63e1285083b2bdb06de2212aeddcdaebb18e2649...v0.2.0
 [0.1.4]: https://pypi.org/project/explain-codebase/0.1.4/
 [0.1.3]: https://pypi.org/project/explain-codebase/0.1.3/

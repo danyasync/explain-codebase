@@ -34,18 +34,18 @@ class GraphRenderer:
     }
 
     ROLE_COLORS = {
-        "entrypoint": ("#4ade80", "#22c55e"),
-        "service": ("#60a5fa", "#3b82f6"),
-        "controller": ("#7dd3fc", "#38bdf8"),
-        "repository": ("#f87171", "#ef4444"),
-        "model": ("#fb7185", "#f43f5e"),
-        "config": ("#fbbf24", "#f59e0b"),
-        "middleware": ("#a78bfa", "#8b5cf6"),
-        "job": ("#fb923c", "#f97316"),
-        "component": ("#22d3ee", "#06b6d4"),
-        "utility": ("#94a3b8", "#64748b"),
-        "test": ("#cbd5e1", "#94a3b8"),
-        "unknown": ("#94a3b8", "#64748b"),
+        "entrypoint": ("#56b6b2", "#7acbc7"),
+        "service": ("#5b8cff", "#7da5ff"),
+        "controller": ("#6f9fcd", "#8ab3d8"),
+        "repository": ("#cf626c", "#df7a83"),
+        "model": ("#bd7082", "#ce8797"),
+        "config": ("#d0a04d", "#dfb568"),
+        "middleware": ("#8878d0", "#a093df"),
+        "job": ("#bf7b55", "#d1906b"),
+        "component": ("#529c9b", "#70b3b1"),
+        "utility": ("#737d8a", "#8b95a2"),
+        "test": ("#697483", "#838e9c"),
+        "unknown": ("#69727e", "#828b96"),
     }
 
     def render(
@@ -98,26 +98,25 @@ class GraphRenderer:
     body {{
       margin: 0;
       font-family: "Segoe UI", sans-serif;
-      background:
-        radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 22%),
-        radial-gradient(circle at bottom right, rgba(45, 212, 191, 0.07), transparent 20%),
-        #111317;
-      color: #e5edf7;
+      background: #0b0d10;
+      color: #f2f4f7;
     }}
     main {{
       max-width: 1600px;
       margin: 0 auto;
-      padding: 28px;
+      padding: 24px;
     }}
     h1 {{
-      margin: 0 0 8px;
-      font-size: 34px;
+      margin: 0 0 6px;
+      font-size: 28px;
+      font-weight: 650;
+      letter-spacing: -0.02em;
     }}
     p {{
       max-width: 880px;
-      color: #9aa8bc;
-      line-height: 1.65;
-      margin-bottom: 20px;
+      color: #8d96a5;
+      line-height: 1.55;
+      margin: 0 0 18px;
     }}
   </style>
 </head>
@@ -143,166 +142,184 @@ class GraphRenderer:
     def _build_fragment_markup(self, container_id: str, payload_json: str, script_nonce: str | None = None) -> str:
         nonce_attribute = f' nonce="{escape(script_nonce, quote=True)}"' if script_nonce else ""
         return f"""
-<div class="ecb-shell" id="{container_id}-shell">
+<div class="ecb-shell" id="{container_id}-shell" data-layout-mode="static" data-motion-mode="ambient" data-collision-state="idle">
   <style>
     #{container_id}-shell {{
       position: relative;
-      background:
-        radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(56, 189, 248, 0.06), transparent 24%),
-        linear-gradient(180deg, rgba(20, 24, 31, 0.98) 0%, rgba(14, 17, 22, 0.98) 100%);
-      border: 1px solid rgba(120, 141, 168, 0.18);
-      border-radius: 24px;
+      background: #101318;
+      border: 1px solid #252a32;
+      border-radius: 8px;
       overflow: hidden;
-      box-shadow: 0 28px 80px rgba(0, 0, 0, 0.32);
+      color: #f2f4f7;
     }}
-    #{container_id}-shell .ecb-toolbar, #{container_id}-shell .ecb-meta {{
+    #{container_id}-shell .ecb-toolbar {{
       display: flex;
       flex-wrap: wrap;
       justify-content: space-between;
-      gap: 14px;
-      padding: 16px 18px;
+      align-items: center;
+      gap: 12px;
+      padding: 0 16px;
+      min-height: 54px;
+      background: #101318;
+      border-bottom: 1px solid #252a32;
     }}
-    #{container_id}-shell .ecb-toolbar {{
-      border-bottom: 1px solid rgba(120, 141, 168, 0.14);
-      background: rgba(15, 19, 24, 0.86);
-      backdrop-filter: blur(16px);
+    #{container_id}-shell .ecb-toolbar-primary {{
+      min-width: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
     }}
     #{container_id}-shell .ecb-group {{
       display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+      gap: 4px;
       align-items: center;
     }}
     #{container_id}-shell button, #{container_id}-shell input {{
       font: inherit;
     }}
     #{container_id}-shell .ecb-mode {{
-      border: 1px solid rgba(120, 141, 168, 0.22);
-      border-radius: 999px;
-      padding: 9px 14px;
-      background: rgba(27, 34, 43, 0.9);
-      color: #c9d6e6;
+      position: relative;
+      align-self: stretch;
+      border: 0;
+      border-radius: 0;
+      padding: 0 11px;
+      background: transparent;
+      color: #8d96a5;
       cursor: pointer;
-      transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.18s ease;
+      transition: color 120ms ease, background-color 120ms ease;
     }}
     #{container_id}-shell .ecb-mode:hover {{
-      background: rgba(34, 43, 54, 0.96);
-      border-color: rgba(125, 211, 252, 0.26);
-      transform: translateY(-1px);
+      background: #15191f;
+      color: #d8dce3;
     }}
     #{container_id}-shell .ecb-mode.is-active {{
-      background: linear-gradient(180deg, rgba(59, 130, 246, 0.24) 0%, rgba(37, 99, 235, 0.24) 100%);
-      border-color: rgba(96, 165, 250, 0.6);
-      color: #f8fbff;
-      box-shadow: inset 0 0 0 1px rgba(191, 219, 254, 0.1);
+      background: transparent;
+      color: #f2f4f7;
+    }}
+    #{container_id}-shell .ecb-mode.is-active::after {{
+      content: "";
+      position: absolute;
+      right: 10px;
+      bottom: 0;
+      left: 10px;
+      height: 2px;
+      background: #5b8cff;
     }}
     #{container_id}-shell .ecb-search {{
-      min-width: 250px;
-      border: 1px solid rgba(120, 141, 168, 0.2);
-      border-radius: 999px;
-      padding: 10px 15px;
-      background: rgba(12, 16, 21, 0.92);
-      color: #edf4ff;
+      width: min(260px, 32vw);
+      min-width: 190px;
+      border: 1px solid #303641;
+      border-radius: 6px;
+      padding: 8px 10px;
+      background: #0b0d10;
+      color: #f2f4f7;
       outline: none;
-      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+      transition: border-color 120ms ease;
     }}
     #{container_id}-shell .ecb-search::placeholder {{
-      color: #74839a;
+      color: #697383;
     }}
     #{container_id}-shell .ecb-search:focus {{
-      border-color: rgba(96, 165, 250, 0.45);
-      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.12);
+      border-color: #5b8cff;
+    }}
+    #{container_id}-shell .ecb-export {{
+      min-height: 34px;
+      border: 1px solid #303641;
+      border-radius: 6px;
+      padding: 0 11px;
+      background: #15191f;
+      color: #d8dce3;
+      cursor: pointer;
+      transition: border-color 120ms ease, background-color 120ms ease;
+    }}
+    #{container_id}-shell .ecb-export:hover {{
+      border-color: #4a5260;
+      background: #191e25;
+    }}
+    #{container_id}-shell .ecb-controls {{
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-height: 46px;
+      padding: 0 16px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-bottom: 1px solid #252a32;
+      background: #0e1115;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }}
+    #{container_id}-shell .ecb-controls::-webkit-scrollbar,
+    #{container_id}-shell .ecb-toolbar-primary::-webkit-scrollbar {{
+      display: none;
+      width: 0;
+      height: 0;
     }}
     #{container_id}-shell .ecb-filter {{
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      color: #9aa8bc;
-      font-size: 14px;
+      flex: 0 0 auto;
+      gap: 7px;
+      color: #9aa2ae;
+      font-size: 13px;
+      white-space: nowrap;
     }}
     #{container_id}-shell .ecb-filter input[type="checkbox"] {{
-      accent-color: #60a5fa;
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: #5b8cff;
     }}
     #{container_id}-shell .ecb-filter input[type="range"] {{
-      accent-color: #60a5fa;
+      width: 108px;
+      accent-color: #5b8cff;
     }}
     #{container_id}-shell .ecb-meta {{
-      color: #8ea0b6;
-      font-size: 14px;
-      padding-top: 12px;
-      padding-bottom: 0;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 10px 16px;
+      border-bottom: 1px solid #1f242b;
+      color: #7f8998;
+      font-size: 12px;
+      line-height: 1.4;
     }}
     #{container_id}-shell .ecb-stage {{
       position: relative;
-      min-height: 820px;
-      padding: 14px;
+      min-height: 680px;
+      background: #101318;
     }}
     #{container_id} {{
-      height: 780px;
-      border-radius: 20px;
-      background:
-        radial-gradient(circle at top left, rgba(96, 165, 250, 0.08), transparent 22%),
-        radial-gradient(circle at center right, rgba(34, 211, 238, 0.07), transparent 20%),
-        radial-gradient(circle at bottom left, rgba(168, 85, 247, 0.05), transparent 20%),
-        linear-gradient(180deg, #111317 0%, #0d1015 100%);
-      border: 1px solid rgba(120, 141, 168, 0.12);
+      height: 680px;
+      background: #101318;
     }}
     #{container_id}-shell .ecb-legend {{
-      position: absolute;
-      top: 28px;
-      right: 28px;
-      width: 260px;
-      padding: 16px 18px;
-      border: 1px solid rgba(120, 141, 168, 0.16);
-      border-radius: 18px;
-      background: rgba(17, 21, 27, 0.82);
-      box-shadow: 0 22px 48px rgba(0, 0, 0, 0.28);
-      backdrop-filter: blur(16px);
-      z-index: 5;
-    }}
-    #{container_id}-shell .ecb-legend h3 {{
-      margin: 0 0 10px;
-      font-size: 15px;
-      color: #edf4ff;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 22px;
+      min-height: 42px;
+      padding: 8px 16px;
+      border-top: 1px solid #252a32;
+      background: #0e1115;
     }}
     #{container_id}-shell .ecb-legend-item {{
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-      color: #9aa8bc;
-      font-size: 14px;
+      gap: 7px;
+      color: #8d96a5;
+      font-size: 12px;
+      white-space: nowrap;
     }}
     #{container_id}-shell .ecb-swatch {{
-      width: 12px;
-      height: 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
       flex: 0 0 auto;
     }}
     #{container_id}-shell .ecb-note {{
-      margin-top: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(120, 141, 168, 0.14);
-      color: #7f90a7;
-      font-size: 13px;
-      line-height: 1.5;
-    }}
-    #{container_id}-shell .ecb-overlay-note {{
-      position: absolute;
-      left: 28px;
-      bottom: 28px;
-      padding: 12px 14px;
-      border: 1px solid rgba(120, 141, 168, 0.14);
-      border-radius: 14px;
-      background: rgba(17, 21, 27, 0.78);
-      color: #8ea0b6;
-      font-size: 13px;
-      line-height: 1.5;
-      backdrop-filter: blur(12px);
-      z-index: 5;
-      max-width: 280px;
+      margin-left: auto;
+      color: #697383;
+      font-size: 12px;
     }}
     #{container_id}-shell .vis-network:focus {{
       outline: none;
@@ -312,19 +329,17 @@ class GraphRenderer:
       left: 0;
       top: 0;
       width: 300px;
-      padding: 14px 15px;
-      border: 1px solid rgba(120, 141, 168, 0.2);
-      border-radius: 16px;
-      background: rgba(12, 16, 21, 0.96);
-      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.34);
-      backdrop-filter: blur(14px);
-      color: #edf4ff;
+      padding: 13px 14px;
+      border: 1px solid #303641;
+      border-radius: 6px;
+      background: #15191f;
+      color: #f2f4f7;
       font-size: 13px;
       line-height: 1.55;
       opacity: 0;
       pointer-events: none;
       transform: translate3d(-9999px, -9999px, 0);
-      transition: opacity 0.16s ease, transform 0.16s ease;
+      transition: opacity 80ms ease;
       z-index: 7;
     }}
     #{container_id}-shell .ecb-tooltip.is-visible {{
@@ -334,11 +349,11 @@ class GraphRenderer:
       font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: #7f90a7;
+      color: #76808e;
       margin-bottom: 4px;
     }}
     #{container_id}-shell .ecb-tooltip-value {{
-      color: #f8fbff;
+      color: #f2f4f7;
       margin-bottom: 10px;
       word-break: break-word;
     }}
@@ -350,73 +365,126 @@ class GraphRenderer:
     #{container_id}-shell .ecb-tooltip-chip {{
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 5px 9px;
-      border-radius: 999px;
-      background: rgba(45, 55, 72, 0.46);
-      color: #cbd7e6;
+      padding: 3px 7px;
+      border-radius: 4px;
+      background: #20252d;
+      color: #c7cdd6;
       font-size: 12px;
-      margin-top: 2px;
+      margin: 2px 4px 0 0;
     }}
     #{container_id}-shell .ecb-tooltip-meta {{
-      color: #dbe7f5;
+      color: #cbd1da;
     }}
     #{container_id}-shell .vis-tooltip {{
       display: none !important;
     }}
-    @media (max-width: 1040px) {{
-      #{container_id}-shell .ecb-legend {{
-        position: static;
-        width: auto;
-        margin: 0 14px 14px;
+    #{container_id}-shell button:focus-visible,
+    #{container_id}-shell input:focus-visible {{
+      outline: 2px solid #5b8cff;
+      outline-offset: 2px;
+    }}
+    @media (max-width: 980px) {{
+      #{container_id}-shell .ecb-toolbar {{
+        align-items: stretch;
+        padding: 0 10px 10px;
       }}
-      #{container_id}-shell .ecb-overlay-note {{
-        position: static;
-        max-width: none;
-        margin: 0 14px 14px;
+      #{container_id}-shell .ecb-toolbar-primary {{
+        width: 100%;
+        min-height: 48px;
+        overflow-x: auto;
+      }}
+      #{container_id}-shell .ecb-toolbar-primary .ecb-group {{
+        height: 48px;
+        width: max-content;
+      }}
+      #{container_id}-shell .ecb-search {{
+        flex: 1 1 180px;
+        width: auto;
+      }}
+      #{container_id}-shell .ecb-controls {{
+        padding: 0 10px;
+      }}
+      #{container_id}-shell .ecb-meta {{
+        padding: 9px 10px;
+      }}
+      #{container_id}-shell .ecb-stage,
+      #{container_id} {{
+        min-height: 600px;
+        height: 600px;
+      }}
+      #{container_id}-shell .ecb-legend {{
+        padding: 9px 10px;
+      }}
+    }}
+    @media (max-width: 560px) {{
+      #{container_id}-shell {{
+        border-radius: 6px;
+      }}
+      #{container_id}-shell .ecb-meta {{
+        display: block;
+      }}
+      #{container_id}-shell .ecb-meta [data-stats] {{
+        margin-top: 3px;
+      }}
+      #{container_id}-shell .ecb-stage,
+      #{container_id} {{
+        min-height: 520px;
+        height: 62vh;
+      }}
+      #{container_id}-shell .ecb-note {{
+        width: 100%;
+        margin-left: 0;
+      }}
+    }}
+    @media (prefers-reduced-motion: reduce) {{
+      #{container_id}-shell * {{
+        transition-duration: 0.01ms !important;
       }}
     }}
   </style>
 
-  <div class="ecb-toolbar">
-    <div class="ecb-group">
-      <button class="ecb-mode" data-view="architecture">Architecture view</button>
-      <button class="ecb-mode" data-view="file">File view</button>
-      <button class="ecb-mode" data-view="entrypoint">Entrypoint flow</button>
-      <button class="ecb-mode" data-view="side-effects">Side effects view</button>
-      <button class="ecb-mode" data-view="risk">Risk view</button>
-      <input class="ecb-search" type="search" placeholder="Search file" aria-label="Search file">
+  <div class="ecb-toolbar" aria-label="Graph controls">
+    <div class="ecb-toolbar-primary">
+      <div class="ecb-group" role="tablist" aria-label="Graph view">
+        <button class="ecb-mode" data-view="architecture" role="tab">Architecture</button>
+        <button class="ecb-mode" data-view="file" role="tab">Files</button>
+        <button class="ecb-mode" data-view="entrypoint" role="tab">Entrypoint flow</button>
+        <button class="ecb-mode" data-view="side-effects" role="tab">Side effects</button>
+        <button class="ecb-mode" data-view="risk" role="tab">Risk</button>
+      </div>
     </div>
     <div class="ecb-group">
-      <label class="ecb-filter"><input type="checkbox" data-filter="hide-utilities"> Hide utilities</label>
-      <label class="ecb-filter"><input type="checkbox" data-filter="hide-isolated"> Hide isolated nodes</label>
-      <label class="ecb-filter"><input type="checkbox" data-filter="core-only"> Show only core modules</label>
-      <label class="ecb-filter"><input type="checkbox" data-filter="side-effects-only"> Show only side effects</label>
-      <label class="ecb-filter">Minimum importance <input type="range" min="0" max="30" value="0" data-filter="importance"></label>
-      <button class="ecb-mode" data-export="png">Export PNG</button>
+      <input class="ecb-search" type="search" placeholder="Search files" aria-label="Search files" autocomplete="off" spellcheck="false">
+      <button class="ecb-export" data-export="png" type="button">Export PNG</button>
     </div>
+  </div>
+
+  <div class="ecb-controls" aria-label="Graph filters">
+    <label class="ecb-filter"><input type="checkbox" data-filter="hide-utilities"> Hide utilities</label>
+    <label class="ecb-filter"><input type="checkbox" data-filter="hide-isolated"> Hide isolated nodes</label>
+    <label class="ecb-filter"><input type="checkbox" data-filter="core-only"> Core modules only</label>
+    <label class="ecb-filter"><input type="checkbox" data-filter="side-effects-only"> Side effects only</label>
+    <label class="ecb-filter">Minimum importance <input type="range" min="0" max="30" value="0" data-filter="importance"></label>
   </div>
 
   <div class="ecb-meta">
     <div data-description></div>
-    <div data-stats></div>
+    <div data-stats aria-live="polite"></div>
   </div>
 
   <div class="ecb-stage">
-    <aside class="ecb-legend">
-      <h3>Legend</h3>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#22c55e"></span>Green     Entrypoint</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#3b82f6"></span>Blue      Service</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#ef4444"></span>Red       Repository / DB</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#f59e0b"></span>Yellow    Config</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#8b5cf6"></span>Purple    Middleware</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#f97316"></span>Orange    External integration</div>
-      <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#94a3b8"></span>Gray      Utility</div>
-      <div class="ecb-note">Node size = importance<br>Edge = import relationship</div>
-    </aside>
     <div id="{container_id}"></div>
     <div class="ecb-tooltip" data-tooltip aria-hidden="true" hidden></div>
-    <div class="ecb-overlay-note">Hover a node to spotlight its neighborhood. Click to pin the focus, then export the current view as PNG.</div>
+  </div>
+  <div class="ecb-legend" aria-label="Legend: node roles">
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#56b6b2"></span>Entrypoint</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#5b8cff"></span>Service</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#cf626c"></span>Repository / DB</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#d0a04d"></span>Config</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#8878d0"></span>Middleware</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#bf7b55"></span>External integration</div>
+    <div class="ecb-legend-item"><span class="ecb-swatch" style="background:#737d8a"></span>Utility</div>
+    <div class="ecb-note">Node size = importance · Edge = import relationship</div>
   </div>
 </div>
 <script src="{VIS_NETWORK_URL}" integrity="{VIS_NETWORK_SRI}" crossorigin="anonymous" referrerpolicy="no-referrer"{nonce_attribute}></script>
@@ -426,7 +494,7 @@ class GraphRenderer:
   const shell = document.getElementById("{container_id}-shell");
   const container = document.getElementById("{container_id}");
   if (typeof vis === "undefined") {{
-    container.innerHTML = '<div style="padding:32px;color:#9aa8bc">Graph library could not be loaded in this browser.</div>';
+    container.innerHTML = '<div style="padding:32px;color:#8d96a5">Graph library could not be loaded in this browser.</div>';
     return;
   }}
 
@@ -436,80 +504,68 @@ class GraphRenderer:
     spotlight: null,
     hoveredNode: null,
     draggingNode: null,
-    scale: 1,
     filters: {{ hideUtilities: false, hideIsolated: false, coreOnly: false, sideEffectsOnly: false, minImportance: 0 }},
   }};
-  let physicsTimer = null;
-  let physicsFrame = null;
-  let driftFrame = null;
-  let previousPositions = null;
-  let stableFrames = 0;
-  let physicsActive = false;
-  let physicsStartedAt = 0;
-  let driftStartedAt = 0;
-  const VELOCITY_THRESHOLD = 0.02;
-  const STABLE_FRAMES_REQUIRED = 60;
-  const MAX_PHYSICS_DURATION_MS = 5000;
-  const DRAG_RESTABILIZE_DELAY_MS = 120;
-  const CANVAS_PADDING = 100;
-  const DRIFT_AMPLITUDE = 1.2;
-  const DRIFT_PERIOD_MS = 8000;
+  let searchTimer = null;
+  let tooltipFrame = null;
+  let filterFrame = null;
+  let ambientFrame = null;
+  let ambientTimestamp = performance.now();
+  let lastAmbientPaint = 0;
+  let collisionFrame = null;
+  let collisionTargets = null;
+  let collisionView = null;
+  let dragOrigin = null;
+  let graphInViewport = true;
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const COLLISION_PADDING = 18;
+  const MAX_COLLISION_NODES = 16;
+  const MAX_COLLISION_DISPLACEMENT = 260;
+  const COLLISION_DURATION_MS = 180;
   const descriptionEl = shell.querySelector("[data-description]");
   const statsEl = shell.querySelector("[data-stats]");
   const tooltipEl = shell.querySelector("[data-tooltip]");
   const nodeSet = new vis.DataSet([]);
   const edgeSet = new vis.DataSet([]);
+  const layoutCache = new Map();
   const visibleState = {{
     nodes: [],
     edges: [],
     nodeMap: new Map(),
-    basePositions: new Map(),
   }};
   const network = new vis.Network(container, {{ nodes: nodeSet, edges: edgeSet }}, {{
-    layout: {{ improvedLayout: true, randomSeed: 17 }},
+    layout: {{ improvedLayout: false, randomSeed: 17 }},
     interaction: {{
       hover: true,
       hoverConnectedEdges: false,
-      navigationButtons: true,
+      navigationButtons: false,
       keyboard: true,
-      tooltipDelay: 120,
+      tooltipDelay: 80,
       zoomView: true,
       dragView: true,
-      hideEdgesOnDrag: false
+      dragNodes: true,
+      hideEdgesOnDrag: false,
+      selectConnectedEdges: false
     }},
-    physics: {{
-      enabled: true,
-      solver: "barnesHut",
-      stabilization: {{ enabled: true, iterations: 420, fit: true }},
-      barnesHut: {{
-        gravitationalConstant: -1800,
-        centralGravity: 0.015,
-        springLength: 260,
-        springConstant: 0.018,
-        damping: 0.92,
-        avoidOverlap: 1.55
-      }},
-      minVelocity: 0.02,
-      maxVelocity: 18,
-      timestep: 0.45,
-      adaptiveTimestep: true
-    }},
+    physics: {{ enabled: false }},
     nodes: {{
-      borderWidth: 1.8,
-      borderWidthSelected: 3.2,
+      borderWidth: 1.5,
+      borderWidthSelected: 2,
       labelHighlightBold: false,
-      font: {{ face: "Segoe UI", size: 13, color: "#dbe7f5", strokeWidth: 4, strokeColor: "rgba(17,19,23,0.92)" }}
+      chosen: false,
+      font: {{ face: "Segoe UI", size: 13, color: "#d8dce3", strokeWidth: 2, strokeColor: "#101318" }}
     }},
     edges: {{
-      arrows: {{ to: {{ enabled: true, scaleFactor: 0.45 }} }},
-      smooth: {{ type: "dynamic", roundness: 0.24 }},
+      arrows: {{ to: {{ enabled: true, scaleFactor: 0.38 }} }},
+      smooth: {{ enabled: true, type: "curvedCW", roundness: 0.08 }},
       selectionWidth: 0,
-      hoverWidth: 0
+      hoverWidth: 0,
+      chosen: false
     }}
   }});
 
   function rgba(hex, alpha) {{
-    const clean = (hex || "#94a3b8").replace("#", "");
+    const clean = (hex || "#68717e").replace("#", "");
     const normalized = clean.length === 3 ? clean.split("").map((p) => p + p).join("") : clean;
     const n = parseInt(normalized, 16);
     return `rgba(${{(n >> 16) & 255}}, ${{(n >> 8) & 255}}, ${{n & 255}}, ${{alpha}})`;
@@ -520,7 +576,7 @@ class GraphRenderer:
   }}
 
   function activeFocusId() {{
-    return state.hoveredNode || state.spotlight;
+    return state.spotlight;
   }}
 
   function currentPositions(nodeIds) {{
@@ -552,29 +608,64 @@ class GraphRenderer:
       }}
       clusters.get(key).push(node);
     }});
-    const orderedClusters = Array.from(clusters.entries()).sort((left, right) => left[0].localeCompare(right[0]));
+    const orderedClusters = Array.from(clusters.entries())
+      .map(([name, members]) => [name, members.slice().sort((left, right) => right.importance - left.importance || left.id.localeCompare(right.id))])
+      .sort((left, right) => right[1].length - left[1].length || left[0].localeCompare(right[0]));
     const positions = new Map();
-    const clusterCount = Math.max(orderedClusters.length, 1);
-    const clusterRadius = clusterCount === 1 ? 0 : 320 + Math.min(200, clusterCount * 14);
-    orderedClusters.forEach(([clusterName, members], clusterIndex) => {{
-      const baseHash = clusterName.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-      const baseAngle = clusterCount === 1 ? 0 : ((clusterIndex / clusterCount) * Math.PI * 2) + ((baseHash % 17) * 0.02);
-      const centerX = Math.cos(baseAngle) * clusterRadius;
-      const centerY = Math.sin(baseAngle) * clusterRadius * 0.74;
-      const orderedMembers = members.slice().sort((left, right) => right.importance - left.importance || left.id.localeCompare(right.id));
-      orderedMembers.forEach((node, memberIndex) => {{
-        const ringIndex = Math.floor(memberIndex / 6);
-        const localCount = Math.min(6, orderedMembers.length - ringIndex * 6);
-        const localIndex = memberIndex % 6;
-        const localAngle = localCount <= 1 ? 0 : (localIndex / localCount) * Math.PI * 2;
-        const localRadius = 42 + ringIndex * 46 + Math.min(14, Math.log1p(Math.max(node.importance, 1)) * 4);
-        const centerBias = node.isEntrypoint || node.isCore ? 0.72 : 1;
-        positions.set(node.id, {{
-          x: centerX + Math.cos(localAngle + baseAngle * 0.2) * localRadius * centerBias,
-          y: centerY + Math.sin(localAngle + baseAngle * 0.2) * localRadius * centerBias,
-        }});
+
+    function clusterExtent(memberCount) {{
+      if (memberCount <= 1) return 0;
+      let remaining = memberCount - 1;
+      let ring = 0;
+      while (remaining > 0) {{
+        ring += 1;
+        remaining -= 8 + ((ring - 1) * 6);
+      }}
+      return ring * 140;
+    }}
+
+    function placeCluster(clusterName, members, centerX, centerY) {{
+      if (!members.length) return;
+      positions.set(members[0].id, {{ x: centerX, y: centerY }});
+      let memberIndex = 1;
+      let ring = 1;
+      const phase = (clusterName.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) % 24) * (Math.PI / 96);
+      while (memberIndex < members.length) {{
+        const capacity = 8 + ((ring - 1) * 6);
+        const ringCount = Math.min(capacity, members.length - memberIndex);
+        const radius = ring * 140;
+        for (let ringIndex = 0; ringIndex < ringCount; ringIndex += 1) {{
+          const node = members[memberIndex + ringIndex];
+          const angle = phase + (ringIndex / ringCount) * Math.PI * 2;
+          positions.set(node.id, {{
+            x: centerX + Math.cos(angle) * radius,
+            y: centerY + Math.sin(angle) * radius,
+          }});
+        }}
+        memberIndex += ringCount;
+        ring += 1;
+      }}
+    }}
+
+    if (!orderedClusters.length) return positions;
+    const totalNodes = nodes.length;
+    const centralCluster = orderedClusters[0];
+    const useCentralCluster = orderedClusters.length === 1
+      || (centralCluster[1].length >= 3 && centralCluster[1].length >= Math.ceil(totalNodes * 0.36));
+    const outerClusters = useCentralCluster ? orderedClusters.slice(1) : orderedClusters;
+    const centralExtent = useCentralCluster ? clusterExtent(centralCluster[1].length) : 0;
+    if (useCentralCluster) placeCluster(centralCluster[0], centralCluster[1], 0, 0);
+    if (outerClusters.length) {{
+      const outerExtent = Math.max(...outerClusters.map(([, members]) => clusterExtent(members.length)));
+      const minimumOrbit = totalNodes <= 5 ? 180 : 260;
+      const orbitRadius = centralExtent + outerExtent + Math.max(minimumOrbit, outerClusters.length * 60);
+      outerClusters.forEach(([clusterName, members], clusterIndex) => {{
+        const angle = (clusterIndex / outerClusters.length) * Math.PI * 2;
+        const centerX = Math.cos(angle) * orbitRadius;
+        const centerY = Math.sin(angle) * orbitRadius * 0.55;
+        placeCluster(clusterName, members, centerX, centerY);
       }});
-    }});
+    }}
     return positions;
   }}
 
@@ -623,10 +714,20 @@ class GraphRenderer:
     tooltipEl.hidden = false;
     tooltipEl.setAttribute("aria-hidden", "false");
     placeTooltip(pointer);
-    window.requestAnimationFrame(() => tooltipEl.classList.add("is-visible"));
+    if (tooltipFrame) window.cancelAnimationFrame(tooltipFrame);
+    tooltipFrame = window.requestAnimationFrame(() => {{
+      tooltipFrame = null;
+      if (state.hoveredNode === nodeId && !tooltipEl.hidden) {{
+        tooltipEl.classList.add("is-visible");
+      }}
+    }});
   }}
 
   function hideTooltip() {{
+    if (tooltipFrame) {{
+      window.cancelAnimationFrame(tooltipFrame);
+      tooltipFrame = null;
+    }}
     tooltipEl.classList.remove("is-visible");
     tooltipEl.setAttribute("aria-hidden", "true");
     window.setTimeout(() => {{
@@ -643,15 +744,391 @@ class GraphRenderer:
     visibleState.nodeMap = new Map(nodes.map((node) => [node.id, node]));
   }}
 
-  function resolveBasePositions(nodes, livePositions, seededPositions) {{
-    const nextBasePositions = new Map(visibleState.basePositions);
-    nodes.forEach((node) => {{
-      if (nextBasePositions.has(node.id)) {{
+  function positionsForView(viewName, view) {{
+    if (!layoutCache.has(viewName)) {{
+      layoutCache.set(viewName, seedPositions(view.nodes));
+    }}
+    return layoutCache.get(viewName);
+  }}
+
+  function syncPositionSignature() {{
+    const positions = currentPositions(nodeSet.getIds());
+    let hash = 2166136261;
+    Object.keys(positions).sort().forEach((id) => {{
+      const position = positions[id];
+      const token = `${{id}}:${{Math.round(position.x * 10)}}:${{Math.round(position.y * 10)}}`;
+      for (let index = 0; index < token.length; index += 1) {{
+        hash ^= token.charCodeAt(index);
+        hash = Math.imul(hash, 16777619);
+      }}
+    }});
+    shell.dataset.positionSignature = `${{Object.keys(positions).length}}:${{hash >>> 0}}`;
+  }}
+
+  function hashText(value) {{
+    let hash = 2166136261;
+    const text = String(value);
+    for (let index = 0; index < text.length; index += 1) {{
+      hash ^= text.charCodeAt(index);
+      hash = Math.imul(hash, 16777619);
+    }}
+    return hash >>> 0;
+  }}
+
+  function curveDetails(edge) {{
+    const hash = hashText(edge.id);
+    return {{
+      direction: hash % 2 === 0 ? 1 : -1,
+      roundness: 0.065 + ((hash % 4) * 0.012),
+    }};
+  }}
+
+  function nodePosition(nodeId) {{
+    const bodyNode = network.body && network.body.nodes ? network.body.nodes[nodeId] : null;
+    if (!bodyNode || !Number.isFinite(bodyNode.x) || !Number.isFinite(bodyNode.y)) return null;
+    return {{ x: bodyNode.x, y: bodyNode.y }};
+  }}
+
+  function drawNodeBreathing(context) {{
+    if (reducedMotion.matches || visibleState.nodes.length > 180) return;
+    const scale = Math.max(network.getScale(), 0.2);
+    context.save();
+    context.lineWidth = 1 / scale;
+    visibleState.nodes.forEach((node) => {{
+      const position = nodePosition(node.id);
+      if (!position) return;
+      const phase = (hashText(node.id) % 628) / 100;
+      const pulse = (Math.sin((ambientTimestamp / 1250) + phase) + 1) / 2;
+      const radius = node.size * (1.035 + pulse * 0.045);
+      context.beginPath();
+      context.arc(position.x, position.y, radius, 0, Math.PI * 2);
+      context.strokeStyle = rgba(node.borderColor, 0.16 + pulse * 0.1);
+      context.stroke();
+    }});
+    context.restore();
+  }}
+
+  function drawEdgeFlow(context) {{
+    if (reducedMotion.matches || visibleState.edges.length > 360) return;
+    const focusId = activeFocusId();
+    const scale = Math.max(network.getScale(), 0.2);
+    let drawn = 0;
+    const maxAmbientEdges = focusId ? 120 : 64;
+    context.save();
+    visibleState.edges.forEach((edge) => {{
+      const focused = focusId && (edge.from === focusId || edge.to === focusId);
+      if (focusId && !focused) return;
+      if (drawn >= maxAmbientEdges) return;
+      const phase = (hashText(edge.id) % 1000) / 1000;
+      const progress = ((ambientTimestamp / 2600) + phase) % 1;
+      const flowAlpha = Math.pow(Math.sin(Math.PI * progress), 1.4);
+      const t = 0.08 + progress * 0.84;
+      const bodyEdge = network.body && network.body.edges ? network.body.edges[edge.id] : null;
+      const edgePath = bodyEdge && bodyEdge.edgeType;
+      let point = null;
+      if (edgePath && typeof edgePath.getPoint === "function") {{
+        try {{
+          point = edgePath.getPoint(t);
+        }} catch (error) {{
+          point = null;
+        }}
+      }}
+      if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {{
+        const source = nodePosition(edge.from);
+        const target = nodePosition(edge.to);
+        if (!source || !target) return;
+        const dx = target.x - source.x;
+        const dy = target.y - source.y;
+        const distance = Math.max(Math.hypot(dx, dy), 1);
+        const curve = curveDetails(edge);
+        const bend = Math.min(96, distance * curve.roundness) * curve.direction;
+        const controlX = (source.x + target.x) / 2 - (dy / distance) * bend;
+        const controlY = (source.y + target.y) / 2 + (dx / distance) * bend;
+        const inverse = 1 - t;
+        point = {{
+          x: (inverse * inverse * source.x) + (2 * inverse * t * controlX) + (t * t * target.x),
+          y: (inverse * inverse * source.y) + (2 * inverse * t * controlY) + (t * t * target.y),
+        }};
+      }}
+      const baseColor = focused ? (edge.from === focusId ? "#5b8cff" : "#56b6b2") : edge.color;
+      context.beginPath();
+      context.arc(point.x, point.y, (focused ? 2.1 : 1.35) / scale, 0, Math.PI * 2);
+      context.fillStyle = rgba(baseColor, (focused ? 0.9 : 0.52) * flowAlpha);
+      context.fill();
+      drawn += 1;
+    }});
+    context.restore();
+  }}
+
+  function startAmbientAnimation() {{
+    if (
+      ambientFrame
+      || document.hidden
+      || reducedMotion.matches
+      || !graphInViewport
+      || state.draggingNode
+      || collisionTargets
+      || visibleState.nodes.length > 180
+      || visibleState.edges.length > 360
+    ) return;
+    const animate = (timestamp) => {{
+      if (document.hidden || reducedMotion.matches || !graphInViewport || state.draggingNode || collisionTargets) {{
+        ambientFrame = null;
         return;
       }}
-      nextBasePositions.set(node.id, livePositions[node.id] || seededPositions.get(node.id) || {{ x: 0, y: 0 }});
+      if (visibleState.nodes.length > 180 || visibleState.edges.length > 360) {{
+        ambientFrame = null;
+        return;
+      }}
+      const interval = visibleState.nodes.length > 100 || visibleState.edges.length > 220 ? 66 : 33;
+      if (timestamp - lastAmbientPaint >= interval) {{
+        ambientTimestamp = timestamp;
+        lastAmbientPaint = timestamp;
+        network.redraw();
+      }}
+      ambientFrame = window.requestAnimationFrame(animate);
+    }};
+    ambientFrame = window.requestAnimationFrame(animate);
+  }}
+
+  function setNodePosition(nodeId, position) {{
+    const bodyNode = network.body && network.body.nodes ? network.body.nodes[nodeId] : null;
+    if (!bodyNode) return;
+    bodyNode.x = position.x;
+    bodyNode.y = position.y;
+  }}
+
+  function persistLayoutPositions(positionMap, viewName = state.view) {{
+    const view = payload.views[viewName] || visibleView();
+    const cachedPositions = positionsForView(viewName, view);
+    const updates = [];
+    positionMap.forEach((position, nodeId) => {{
+      cachedPositions.set(nodeId, {{ x: position.x, y: position.y }});
+      if (viewName === state.view && nodeSet.get(nodeId)) {{
+        updates.push({{ id: nodeId, x: position.x, y: position.y }});
+      }}
     }});
-    return nextBasePositions;
+    if (updates.length) nodeSet.update(updates);
+  }}
+
+  function localCollisionTargets(draggedNodeId, fallbackPosition) {{
+    const view = visibleView();
+    const nodeMap = new Map(view.nodes.map((node) => [node.id, node]));
+    const cachedPositions = positionsForView(state.view, view);
+    const livePositions = currentPositions(nodeSet.getIds());
+    const targets = new Map();
+    view.nodes.forEach((node) => {{
+      const position = livePositions[node.id] || cachedPositions.get(node.id) || {{ x: 0, y: 0 }};
+      targets.set(node.id, {{ x: position.x, y: position.y }});
+    }});
+    const originals = new Map(Array.from(targets, ([nodeId, position]) => [nodeId, {{ x: position.x, y: position.y }}]));
+    const nodeIds = Array.from(targets.keys()).sort();
+    const maximumRadius = Math.max(1, ...view.nodes.map((node) => Number(node.size) || 1));
+    const cellSize = Math.max(96, maximumRadius * 2 + COLLISION_PADDING);
+    const cells = new Map();
+    const affected = new Set([draggedNodeId]);
+    const queue = [draggedNodeId];
+    const pending = new Set(queue);
+    let overflow = false;
+    let processed = 0;
+
+    function cellCoordinates(position) {{
+      return {{ x: Math.floor(position.x / cellSize), y: Math.floor(position.y / cellSize) }};
+    }}
+
+    function cellKey(position) {{
+      const coordinates = cellCoordinates(position);
+      return `${{coordinates.x}}:${{coordinates.y}}`;
+    }}
+
+    function addToCell(nodeId, position) {{
+      const key = cellKey(position);
+      if (!cells.has(key)) cells.set(key, new Set());
+      cells.get(key).add(nodeId);
+    }}
+
+    function removeFromCell(nodeId, position) {{
+      const key = cellKey(position);
+      const bucket = cells.get(key);
+      if (!bucket) return;
+      bucket.delete(nodeId);
+      if (!bucket.size) cells.delete(key);
+    }}
+
+    function nearbyNodeIds(position) {{
+      const coordinates = cellCoordinates(position);
+      const nearby = new Set();
+      for (let offsetX = -1; offsetX <= 1; offsetX += 1) {{
+        for (let offsetY = -1; offsetY <= 1; offsetY += 1) {{
+          const bucket = cells.get(`${{coordinates.x + offsetX}}:${{coordinates.y + offsetY}}`);
+          if (bucket) bucket.forEach((nodeId) => nearby.add(nodeId));
+        }}
+      }}
+      return Array.from(nearby).sort();
+    }}
+
+    function moveTarget(nodeId, position) {{
+      const previous = targets.get(nodeId);
+      const original = originals.get(nodeId);
+      if (!previous || !original || nodeId === draggedNodeId) return false;
+      if (!affected.has(nodeId) && affected.size >= MAX_COLLISION_NODES) return false;
+      if (Math.hypot(position.x - original.x, position.y - original.y) > MAX_COLLISION_DISPLACEMENT) return false;
+      removeFromCell(nodeId, previous);
+      targets.set(nodeId, position);
+      addToCell(nodeId, position);
+      affected.add(nodeId);
+      if (!pending.has(nodeId)) {{
+        queue.push(nodeId);
+        pending.add(nodeId);
+      }}
+      return true;
+    }}
+
+    nodeIds.forEach((nodeId) => addToCell(nodeId, targets.get(nodeId)));
+    while (queue.length && processed < MAX_COLLISION_NODES * 8) {{
+      const currentId = queue.shift();
+      pending.delete(currentId);
+      processed += 1;
+      const current = targets.get(currentId);
+      const currentNode = nodeMap.get(currentId);
+      if (!current || !currentNode) continue;
+      const candidates = nearbyNodeIds(current);
+      for (const otherId of candidates) {{
+        if (otherId === currentId) continue;
+        const other = targets.get(otherId);
+        const otherNode = nodeMap.get(otherId);
+        if (!other || !otherNode) continue;
+        const anchorId = otherId === draggedNodeId ? otherId : currentId;
+        const moverId = otherId === draggedNodeId ? currentId : otherId;
+        if (moverId === draggedNodeId) continue;
+        const anchor = targets.get(anchorId);
+        const mover = targets.get(moverId);
+        const anchorNode = nodeMap.get(anchorId);
+        const moverNode = nodeMap.get(moverId);
+        if (!anchor || !mover || !anchorNode || !moverNode) continue;
+        let dx = mover.x - anchor.x;
+        let dy = mover.y - anchor.y;
+        let distance = Math.hypot(dx, dy);
+        const minimumDistance = anchorNode.size + moverNode.size + COLLISION_PADDING;
+        if (distance >= minimumDistance) continue;
+        if (distance < 0.001) {{
+          const angle = (hashText(`${{anchorId}}|${{moverId}}`) % 628) / 100;
+          dx = Math.cos(angle);
+          dy = Math.sin(angle);
+          distance = 1;
+        }}
+        const overlap = minimumDistance - distance + 0.5;
+        const nextPosition = {{
+          x: mover.x + (dx / distance) * overlap,
+          y: mover.y + (dy / distance) * overlap,
+        }};
+        if (!moveTarget(moverId, nextPosition)) overflow = true;
+      }}
+    }}
+    if (queue.length) overflow = true;
+
+    affected.forEach((nodeId) => {{
+      if (overflow) return;
+      const position = targets.get(nodeId);
+      const node = nodeMap.get(nodeId);
+      if (!position || !node) return;
+      for (const otherId of nearbyNodeIds(position)) {{
+        if (otherId === nodeId) continue;
+        const other = targets.get(otherId);
+        const otherNode = nodeMap.get(otherId);
+        if (!other || !otherNode) continue;
+        if (Math.hypot(other.x - position.x, other.y - position.y) < node.size + otherNode.size + COLLISION_PADDING - 0.5) {{
+          overflow = true;
+          break;
+        }}
+      }}
+    }});
+
+    if (overflow) {{
+      const draggedNode = nodeMap.get(draggedNodeId);
+      const droppedPosition = originals.get(draggedNodeId);
+      if (fallbackPosition) {{
+        return new Map([[draggedNodeId, fallbackPosition]]);
+      }}
+      const otherIds = nodeIds.filter((nodeId) => nodeId !== draggedNodeId);
+      const isAvailable = (candidate) => otherIds.every((nodeId) => {{
+        const other = originals.get(nodeId);
+        const otherNode = nodeMap.get(nodeId);
+        return !other || !otherNode || Math.hypot(other.x - candidate.x, other.y - candidate.y) >= draggedNode.size + otherNode.size + COLLISION_PADDING;
+      }});
+      if (draggedNode && droppedPosition) {{
+        const ringStep = Math.max(28, draggedNode.size * 0.8);
+        const phase = (hashText(draggedNodeId) % 628) / 100;
+        for (let ring = 1; ring <= 16; ring += 1) {{
+          const samples = 12 + ring * 4;
+          for (let sample = 0; sample < samples; sample += 1) {{
+            const angle = phase + (sample / samples) * Math.PI * 2;
+            const candidate = {{
+              x: droppedPosition.x + Math.cos(angle) * ring * ringStep,
+              y: droppedPosition.y + Math.sin(angle) * ring * ringStep,
+            }};
+            if (isAvailable(candidate)) return new Map([[draggedNodeId, candidate]]);
+          }}
+        }}
+      }}
+      return new Map([[draggedNodeId, droppedPosition || {{ x: 0, y: 0 }}]]);
+    }}
+
+    const changedTargets = new Map();
+    affected.forEach((nodeId) => {{
+      const target = targets.get(nodeId);
+      if (target) changedTargets.set(nodeId, target);
+    }});
+    return changedTargets;
+  }}
+
+  function finishCollisionResolution() {{
+    if (!collisionTargets || !collisionView) return;
+    if (collisionFrame) window.cancelAnimationFrame(collisionFrame);
+    if (collisionView === state.view) {{
+      collisionTargets.forEach((position, nodeId) => setNodePosition(nodeId, position));
+    }}
+    persistLayoutPositions(collisionTargets, collisionView);
+    collisionFrame = null;
+    collisionTargets = null;
+    collisionView = null;
+    shell.dataset.collisionState = "idle";
+    network.redraw();
+    syncPositionSignature();
+    startAmbientAnimation();
+  }}
+
+  function animateCollisionResolution(targets) {{
+    if (!targets.size) return;
+    const starts = currentPositions(Array.from(targets.keys()));
+    const startedAt = performance.now();
+    collisionTargets = targets;
+    collisionView = state.view;
+    shell.dataset.collisionState = "settling";
+
+    if (reducedMotion.matches) {{
+      finishCollisionResolution();
+      return;
+    }}
+
+    const step = (timestamp) => {{
+      const progress = Math.min(1, (timestamp - startedAt) / COLLISION_DURATION_MS);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      targets.forEach((target, nodeId) => {{
+        const start = starts[nodeId] || target;
+        setNodePosition(nodeId, {{
+          x: start.x + (target.x - start.x) * eased,
+          y: start.y + (target.y - start.y) * eased,
+        }});
+      }});
+      network.redraw();
+      if (progress < 1) {{
+        collisionFrame = window.requestAnimationFrame(step);
+      }} else {{
+        finishCollisionResolution();
+      }}
+    }};
+    collisionFrame = window.requestAnimationFrame(step);
   }}
 
   function neighbors(nodeId, edges) {{
@@ -698,231 +1175,85 @@ class GraphRenderer:
     return {{ nodes, edges }};
   }}
 
-  function persistBasePositions(nodeIds = nodeSet.getIds()) {{
-    if (typeof network.storePositions === "function") {{
-      try {{
-        network.storePositions();
-      }} catch (error) {{
-        // Ignore storePositions failures and fall back to reading live coordinates.
-      }}
+  function applyInteractiveStyles(selectSearchMatch = false) {{
+    if (selectSearchMatch && state.search.trim()) {{
+      const query = state.search.trim().toLowerCase();
+      const firstMatch = visibleState.nodes.find((node) =>
+        [node.id, node.label, node.cluster, node.role].join(" ").toLowerCase().includes(query)
+      );
+      state.spotlight = firstMatch ? firstMatch.id : null;
     }}
-    const positions = currentPositions(nodeIds);
-    const nextBasePositions = new Map(visibleState.basePositions);
-    Object.entries(positions).forEach(([nodeId, position]) => {{
-      nextBasePositions.set(nodeId, position);
-    }});
-    visibleState.basePositions = nextBasePositions;
-    driftStartedAt = performance.now();
-  }}
-
-  function applyVisualPositions(anchors) {{
-    if (!anchors || !anchors.size) {{
-      return;
-    }}
-    let changed = false;
-    anchors.forEach((position, nodeId) => {{
-      const bodyNode = network.body?.nodes?.[nodeId];
-      if (!bodyNode) {{
-        return;
-      }}
-      bodyNode.x = position.x;
-      bodyNode.y = position.y;
-      if (bodyNode.options) {{
-        bodyNode.options.x = position.x;
-        bodyNode.options.y = position.y;
-      }}
-      changed = true;
-    }});
-    if (changed) {{
-      network.redraw();
-    }}
-  }}
-
-  function stopDrift(resetToAnchors = false) {{
-    if (driftFrame) {{
-      window.cancelAnimationFrame(driftFrame);
-      driftFrame = null;
-    }}
-    if (resetToAnchors && visibleState.basePositions.size) {{
-      applyVisualPositions(visibleState.basePositions);
-    }}
-  }}
-
-  function startDrift() {{
-    stopDrift(true);
-    if (!visibleState.basePositions.size) {{
-      persistBasePositions();
-    }}
-    if (!visibleState.basePositions.size) {{
-      return;
-    }}
-    const anchors = new Map(visibleState.basePositions);
-    const driftStep = (timestamp) => {{
-      if (physicsActive || state.draggingNode) {{
-        driftFrame = window.requestAnimationFrame(driftStep);
-        return;
-      }}
-      const updates = [];
-      anchors.forEach((anchor, nodeId) => {{
-        if (!nodeSet.get(nodeId)) {{
-          return;
-        }}
-        const phaseSeed = nodeId.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
-        const phase = phaseSeed * 0.07;
-        const elapsed = (timestamp - driftStartedAt) / DRIFT_PERIOD_MS;
-        const importance = visibleState.nodeMap.get(nodeId)?.importance || 1;
-        const amplitude = DRIFT_AMPLITUDE + Math.min(0.75, Math.log1p(importance) * 0.16);
-        const dx = Math.sin((elapsed * Math.PI * 2) + phase) * amplitude;
-        const dy = Math.cos((elapsed * Math.PI * 2 * 0.92) + phase) * amplitude * 0.72;
-        updates.push({{ id: nodeId, x: anchor.x + dx, y: anchor.y + dy }});
-      }});
-      if (updates.length) {{
-        applyVisualPositions(new Map(updates.map((item) => [item.id, {{ x: item.x, y: item.y }}])));
-      }}
-      driftFrame = window.requestAnimationFrame(driftStep);
-    }};
-    driftFrame = window.requestAnimationFrame(driftStep);
-  }}
-
-  function stopPhysics() {{
-    physicsActive = false;
-    previousPositions = null;
-    stableFrames = 0;
-    if (physicsTimer) {{
-      window.clearTimeout(physicsTimer);
-      physicsTimer = null;
-    }}
-    if (physicsFrame) {{
-      window.cancelAnimationFrame(physicsFrame);
-      physicsFrame = null;
-    }}
-    network.stopSimulation();
-    network.setOptions({{ physics: {{ enabled: false }} }});
-    persistBasePositions();
-    shell.classList.add("is-settled");
-    startDrift();
-  }}
-
-  function monitorPhysics(nodeIds) {{
-    if (!physicsActive) {{
-      return;
-    }}
-    const positions = currentPositions(nodeIds);
-    const ids = Object.keys(positions);
-    if (previousPositions) {{
-      let totalMovement = 0;
-      let samples = 0;
-      ids.forEach((id) => {{
-        const current = positions[id];
-        const previous = previousPositions[id];
-        if (!current || !previous) {{
-          return;
-        }}
-        totalMovement += Math.hypot(current.x - previous.x, current.y - previous.y);
-        samples += 1;
-      }});
-      const averageVelocity = samples ? totalMovement / samples : 0;
-      stableFrames = averageVelocity < VELOCITY_THRESHOLD ? stableFrames + 1 : 0;
-      if (stableFrames >= STABLE_FRAMES_REQUIRED || performance.now() - physicsStartedAt > MAX_PHYSICS_DURATION_MS) {{
-        stopPhysics();
-        return;
-      }}
-    }}
-    previousPositions = positions;
-    physicsFrame = window.requestAnimationFrame(() => monitorPhysics(nodeIds));
-  }}
-
-  function beginPhysics(nodeIds) {{
-    shell.classList.remove("is-settled");
-    stopDrift(true);
-    if (physicsTimer) {{
-      window.clearTimeout(physicsTimer);
-      physicsTimer = null;
-    }}
-    if (physicsFrame) {{
-      window.cancelAnimationFrame(physicsFrame);
-      physicsFrame = null;
-    }}
-    physicsActive = true;
-    physicsStartedAt = performance.now();
-    previousPositions = null;
-    stableFrames = 0;
-    network.setOptions({{ physics: {{ enabled: true }} }});
-    network.startSimulation();
-    physicsTimer = window.setTimeout(() => monitorPhysics(nodeIds), 80);
-  }}
-
-  function applyInteractiveStyles(focusSearch = false) {{
     const focusId = activeFocusId();
     const spotlightNeighbors = focusId ? neighbors(focusId, visibleState.edges) : {{ incoming: new Set(), outgoing: new Set() }};
     nodeSet.update(visibleState.nodes.map((node) => {{
       const highlighted = !focusId || node.id === focusId || spotlightNeighbors.incoming.has(node.id) || spotlightNeighbors.outgoing.has(node.id);
-      const showLabel = node.showLabel
-        || state.scale >= 1.34
-        || node.id === focusId
-        || ((spotlightNeighbors.incoming.has(node.id) || spotlightNeighbors.outgoing.has(node.id)) && state.scale >= 1.08);
+      const showLabel = node.showLabel || node.id === focusId;
+      const baseBorder = node.isEntrypoint ? node.borderColor : rgba(node.borderColor, 0.86);
       return {{
         id: node.id,
         label: showLabel ? node.fullLabel : "",
         title: "",
         color: {{
-          background: highlighted ? node.backgroundColor : rgba(node.backgroundColor, 0.1),
-          border: highlighted ? node.borderColor : rgba(node.borderColor, 0.14),
-          highlight: {{ background: node.backgroundColor, border: node.borderColor }},
-          hover: {{ background: node.backgroundColor, border: node.borderColor }}
+          background: highlighted ? node.backgroundColor : rgba(node.backgroundColor, 0.14),
+          border: node.id === focusId ? "#9bb5ff" : (highlighted ? baseBorder : rgba(node.borderColor, 0.18)),
+          highlight: {{ background: node.backgroundColor, border: "#9bb5ff" }},
+          hover: {{ background: node.backgroundColor, border: baseBorder }}
         }},
         font: {{
           face: "Segoe UI",
           size: showLabel ? 13 : 1,
-          color: highlighted ? "#edf4ff" : "rgba(154,168,188,0.24)",
-          strokeWidth: showLabel ? 4 : 0,
-          strokeColor: "rgba(17,19,23,0.94)"
+          color: highlighted ? "#d8dce3" : "rgba(141,150,165,0.28)",
+          strokeWidth: showLabel ? 2 : 0,
+          strokeColor: "#101318"
         }},
-        borderWidth: node.id === focusId ? 3.2 : (node.isEntrypoint ? 2.5 : 1.6),
-        shadow: highlighted ? {{ enabled: true, color: rgba(node.borderColor, node.id === focusId ? 0.42 : 0.24), size: node.id === focusId ? 28 : 18, x: 0, y: 0 }} : {{ enabled: false, size: 0, x: 0, y: 0 }},
+        borderWidth: node.isEntrypoint ? 2 : 1.5,
+        shadow: false,
       }};
     }}));
     edgeSet.update(visibleState.edges.map((edge) => {{
-      const baseColor = edge.dashes && edge.color === "#94a3b8" ? "#f59e0b" : edge.color;
-      const baseAlpha = edge.width >= 4 ? 0.6 : (edge.width >= 2.6 ? 0.32 : 0.15);
+      const baseColor = edge.dashes && edge.color === "#68717e" ? "#d0a04d" : edge.color;
+      const baseAlpha = edge.width >= 4 ? 0.52 : (edge.width >= 2.6 ? 0.28 : 0.14);
       let color = rgba(baseColor, baseAlpha);
-      let width = edge.width;
       const isOutgoingFocus = focusId && edge.from === focusId;
       const isIncomingFocus = focusId && edge.to === focusId;
-      const isFocusedEdge = Boolean(isOutgoingFocus || isIncomingFocus);
       if (focusId) {{
-        if (isOutgoingFocus) {{ color = rgba("#60a5fa", 0.98); width = Math.max(width + 1.8, 3.8); }}
-        else if (isIncomingFocus) {{ color = rgba("#67e8f9", 0.98); width = Math.max(width + 1.8, 3.8); }}
-        else {{ color = rgba(baseColor, 0.06); width = Math.max(0.8, width * 0.6); }}
+        if (isOutgoingFocus) color = rgba("#5b8cff", 0.92);
+        else if (isIncomingFocus) color = rgba("#56b6b2", 0.92);
+        else color = rgba(baseColor, 0.05);
       }}
       return {{
         id: edge.id,
         title: "",
         color: {{ color, highlight: color, hover: color }},
-        width,
-        shadow: isFocusedEdge ? {{ enabled: true, color: rgba("#38bdf8", 0.34), size: 18, x: 0, y: 0 }} : {{ enabled: false, size: 0, x: 0, y: 0 }},
+        width: edge.width,
+        shadow: false,
       }};
     }}));
     descriptionEl.textContent = focusId
-      ? `${{visibleView().description}} Spotlight mode highlights direct dependencies.`
+      ? `${{visibleView().description}} Direct dependencies are highlighted.`
       : visibleView().description;
     statsEl.textContent = `${{visibleState.nodes.length}} nodes - ${{visibleState.edges.length}} edges`;
-    shell.querySelectorAll(".ecb-mode[data-view]").forEach((button) => button.classList.toggle("is-active", button.dataset.view === state.view));
-    if (focusSearch && state.search.trim()) {{
-      const query = state.search.trim().toLowerCase();
-      const firstMatch = visibleState.nodes.find((node) => [node.id, node.label, node.cluster, node.role].join(" ").toLowerCase().includes(query));
-      if (firstMatch) {{
-        network.selectNodes([firstMatch.id]);
-        network.focus(firstMatch.id, {{ scale: Math.max(state.scale, 1.18), animation: {{ duration: 280, easingFunction: "easeInOutQuad" }} }});
-      }}
-    }} else if (focusId) {{
+    shell.querySelectorAll(".ecb-mode[data-view]").forEach((button) => {{
+      const active = button.dataset.view === state.view;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", String(active));
+    }});
+    if (focusId) {{
       network.selectNodes([focusId]);
     }} else {{
       network.unselectAll();
     }}
   }}
 
-  function render(focusSearch = false, restartLayout = false) {{
+  function replaceItems(dataSet, items) {{
+    const nextIds = new Set(items.map((item) => item.id));
+    const removedIds = dataSet.getIds().filter((id) => !nextIds.has(id));
+    if (removedIds.length) dataSet.remove(removedIds);
+    if (items.length) dataSet.update(items);
+  }}
+
+  function render(selectSearchMatch = false, fitView = false) {{
+    if (collisionTargets) finishCollisionResolution();
     const view = visibleView();
     const filtered = filterView(view);
     if (state.spotlight && !filtered.nodes.some((node) => node.id === state.spotlight)) {{
@@ -931,17 +1262,10 @@ class GraphRenderer:
     if (state.hoveredNode && !filtered.nodes.some((node) => node.id === state.hoveredNode)) {{
       state.hoveredNode = null;
     }}
-    const nodeIds = filtered.nodes.map((node) => node.id);
-    const livePositions = currentPositions(nodeIds);
-    const seededPositions = seedPositions(filtered.nodes);
     updateVisibleState(filtered.nodes, filtered.edges);
-    stopDrift(true);
-    const basePositions = resolveBasePositions(filtered.nodes, livePositions, seededPositions);
-    visibleState.basePositions = basePositions;
-    nodeSet.clear();
-    edgeSet.clear();
-    nodeSet.add(filtered.nodes.map((node) => {{
-      const position = basePositions.get(node.id) || {{ x: 0, y: 0 }};
+    const positions = positionsForView(state.view, view);
+    replaceItems(nodeSet, filtered.nodes.map((node) => {{
+      const position = positions.get(node.id) || {{ x: 0, y: 0 }};
       return {{
         id: node.id,
         label: "",
@@ -950,6 +1274,7 @@ class GraphRenderer:
         path: node.path,
         x: position.x,
         y: position.y,
+        fixed: {{ x: false, y: false }},
         size: node.size,
         color: {{
           background: node.backgroundColor,
@@ -960,18 +1285,19 @@ class GraphRenderer:
         font: {{
           face: "Segoe UI",
           size: 1,
-          color: "#edf4ff",
+          color: "#d8dce3",
           strokeWidth: 0,
-          strokeColor: "rgba(17,19,23,0.94)"
+          strokeColor: "#101318"
         }},
-        borderWidth: node.isEntrypoint ? 2.5 : 1.6,
-        mass: Math.max(1, node.size / 8),
-        shadow: {{ enabled: true, color: rgba(node.borderColor, 0.18), size: 14, x: 0, y: 0 }},
+        borderWidth: node.isEntrypoint ? 2 : 1.5,
+        chosen: false,
+        shadow: false,
       }};
     }}));
-    edgeSet.add(filtered.edges.map((edge) => {{
-      const baseColor = edge.dashes && edge.color === "#94a3b8" ? "#f59e0b" : edge.color;
-      const baseAlpha = edge.width >= 4 ? 0.6 : (edge.width >= 2.6 ? 0.32 : 0.15);
+    replaceItems(edgeSet, filtered.edges.map((edge) => {{
+      const baseColor = edge.dashes && edge.color === "#68717e" ? "#d0a04d" : edge.color;
+      const baseAlpha = edge.width >= 4 ? 0.52 : (edge.width >= 2.6 ? 0.28 : 0.14);
+      const curve = curveDetails(edge);
       return {{
         id: edge.id,
         from: edge.from,
@@ -981,23 +1307,21 @@ class GraphRenderer:
         width: edge.width,
         dashes: edge.dashes,
         color: {{ color: rgba(baseColor, baseAlpha), highlight: rgba(baseColor, baseAlpha), hover: rgba(baseColor, baseAlpha) }},
-        smooth: {{ type: "dynamic", roundness: 0.24 }},
-        shadow: {{ enabled: false, size: 0, x: 0, y: 0 }},
+        smooth: {{
+          enabled: true,
+          type: curve.direction > 0 ? "curvedCW" : "curvedCCW",
+          roundness: curve.roundness,
+        }},
+        chosen: false,
+        shadow: false,
       }};
     }}));
-    applyInteractiveStyles(focusSearch);
-    if (restartLayout) {{
-      beginPhysics(nodeIds);
-      window.setTimeout(() => {{
-        network.fit({{ animation: {{ duration: 260, easingFunction: "easeInOutQuad" }} }});
-      }}, 120);
-      window.setTimeout(() => {{
-        const nextScale = Math.max(0.72, network.getScale() * (1 - CANVAS_PADDING / 1250));
-        network.moveTo({{ scale: nextScale, animation: {{ duration: 260, easingFunction: "easeInOutQuad" }} }});
-      }}, 420);
-    }} else if (!physicsActive) {{
-      startDrift();
+    applyInteractiveStyles(selectSearchMatch);
+    if (fitView && filtered.nodes.length) {{
+      network.fit({{ nodes: filtered.nodes.map((node) => node.id), animation: false }});
     }}
+    syncPositionSignature();
+    startAmbientAnimation();
   }}
 
   shell.querySelectorAll(".ecb-mode[data-view]").forEach((button) => button.addEventListener("click", () => {{
@@ -1005,14 +1329,15 @@ class GraphRenderer:
     state.spotlight = null;
     state.hoveredNode = null;
     hideTooltip();
-    render(true, true);
+    render(false, true);
   }}));
   shell.querySelector(".ecb-search").addEventListener("input", (event) => {{
     state.search = event.target.value;
     state.spotlight = null;
     state.hoveredNode = null;
     hideTooltip();
-    render(true, false);
+    if (searchTimer) window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(() => render(true, false), 90);
   }});
   shell.querySelectorAll("input[data-filter]").forEach((input) => input.addEventListener("input", () => {{
     state.filters.hideUtilities = shell.querySelector('input[data-filter="hide-utilities"]').checked;
@@ -1023,7 +1348,11 @@ class GraphRenderer:
     state.spotlight = null;
     state.hoveredNode = null;
     hideTooltip();
-    render(true, false);
+    if (filterFrame) window.cancelAnimationFrame(filterFrame);
+    filterFrame = window.requestAnimationFrame(() => {{
+      filterFrame = null;
+      render(false, false);
+    }});
   }}));
   shell.querySelector('[data-export="png"]').addEventListener("click", () => {{
     const canvas = container.querySelector("canvas");
@@ -1041,16 +1370,17 @@ class GraphRenderer:
       hideTooltip();
     }}
     applyInteractiveStyles(false);
+    syncPositionSignature();
   }});
   network.on("hoverNode", (params) => {{
     state.hoveredNode = params.node;
+    container.style.cursor = "grab";
     showTooltip(params.node, params.pointer.DOM);
-    applyInteractiveStyles(false);
   }});
   network.on("blurNode", () => {{
     state.hoveredNode = null;
+    if (!state.draggingNode) container.style.cursor = "default";
     hideTooltip();
-    applyInteractiveStyles(false);
   }});
   network.on("mousemove", (params) => {{
     if (state.hoveredNode && params.pointer && params.pointer.DOM) {{
@@ -1058,28 +1388,70 @@ class GraphRenderer:
     }}
   }});
   network.on("dragStart", (params) => {{
-    state.hoveredNode = null;
-    state.draggingNode = params.nodes.length ? params.nodes[0] : null;
-    hideTooltip();
-    beginPhysics(nodeSet.getIds());
-  }});
-  network.on("dragEnd", () => {{
-    const draggedNodeId = state.draggingNode;
-    if (draggedNodeId) {{
-      persistBasePositions([draggedNodeId]);
+    if (!params.nodes.length) return;
+    if (collisionTargets) finishCollisionResolution();
+    if (ambientFrame) {{
+      window.cancelAnimationFrame(ambientFrame);
+      ambientFrame = null;
     }}
-    state.draggingNode = null;
-    window.setTimeout(() => {{
-      if (!physicsActive) {{
-        beginPhysics(nodeSet.getIds());
-      }}
-    }}, DRAG_RESTABILIZE_DELAY_MS);
+    state.draggingNode = params.nodes[0];
+    dragOrigin = currentPositions([state.draggingNode])[state.draggingNode] || null;
+    state.hoveredNode = null;
+    container.style.cursor = "grabbing";
+    hideTooltip();
   }});
-  network.on("zoom", (params) => {{
-    state.scale = params.scale;
-    applyInteractiveStyles(false);
+  network.on("dragEnd", (params) => {{
+    const draggedNodeId = state.draggingNode || params.nodes[0];
+    state.draggingNode = null;
+    container.style.cursor = "default";
+    if (!draggedNodeId || !dragOrigin) {{
+      dragOrigin = null;
+      startAmbientAnimation();
+      return;
+    }}
+    const droppedPosition = currentPositions([draggedNodeId])[draggedNodeId];
+    const movementThreshold = 5 / Math.max(network.getScale(), 0.2);
+    const movedDistance = droppedPosition
+      ? Math.hypot(droppedPosition.x - dragOrigin.x, droppedPosition.y - dragOrigin.y)
+      : 0;
+    if (!droppedPosition || movedDistance < movementThreshold) {{
+      const original = new Map([[draggedNodeId, dragOrigin]]);
+      original.forEach((position, nodeId) => setNodePosition(nodeId, position));
+      persistLayoutPositions(original);
+      network.redraw();
+      syncPositionSignature();
+      startAmbientAnimation();
+      dragOrigin = null;
+      return;
+    }}
+    const fallbackPosition = dragOrigin;
+    dragOrigin = null;
+    animateCollisionResolution(localCollisionTargets(draggedNodeId, fallbackPosition));
+  }});
+  network.on("beforeDrawing", (context) => drawNodeBreathing(context));
+  network.on("afterDrawing", (context) => drawEdgeFlow(context));
+  if (typeof IntersectionObserver !== "undefined") {{
+    const visibilityObserver = new IntersectionObserver((entries) => {{
+      graphInViewport = entries.some((entry) => entry.isIntersecting);
+      if (graphInViewport) {{
+        startAmbientAnimation();
+      }} else if (ambientFrame) {{
+        window.cancelAnimationFrame(ambientFrame);
+        ambientFrame = null;
+      }}
+    }}, {{ threshold: 0.01 }});
+    visibilityObserver.observe(shell);
+  }}
+  document.addEventListener("visibilitychange", () => {{
+    if (document.hidden && ambientFrame) {{
+      window.cancelAnimationFrame(ambientFrame);
+      ambientFrame = null;
+    }} else if (!document.hidden) {{
+      startAmbientAnimation();
+    }}
   }});
   render(false, true);
+  startAmbientAnimation();
 }})();
 </script>
 """
@@ -1245,7 +1617,7 @@ class GraphRenderer:
                 "from": source,
                 "to": target,
                 "width": min(6.0, 1.6 + data["count"] * 0.7),
-                "color": "#dc2626" if data["side_effect"] else "#94a3b8",
+                "color": "#b95d66" if data["side_effect"] else "#68717e",
                 "dashes": bool(data["cycle"]),
                 "title": f"Import relationships: {data['count']}",
             }
@@ -1362,7 +1734,7 @@ class GraphRenderer:
                     "from": source,
                     "to": target,
                     "width": min(5.4, 1.2 + log1p(max(int(file_nodes[target]["importance"]), 1)) * 0.8),
-                    "color": "#dc2626" if file_nodes[source]["isSideEffect"] or file_nodes[target]["isSideEffect"] else "#94a3b8",
+                    "color": "#b95d66" if file_nodes[source]["isSideEffect"] or file_nodes[target]["isSideEffect"] else "#68717e",
                     "dashes": (source, target) in cycle_edges,
                     "title": "Import relationship",
                 }
@@ -1439,7 +1811,7 @@ class GraphRenderer:
 
     def _node_colors(self, role: str, side_effects: list[str]) -> tuple[str, str]:
         if side_effects and role not in {"entrypoint", "repository", "config", "middleware"}:
-            return "#f97316", "#c2410c"
+            return "#bf7b55", "#d1906b"
         return self.ROLE_COLORS.get(role, self.ROLE_COLORS["unknown"])
 
     def _risk_level(

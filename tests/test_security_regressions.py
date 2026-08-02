@@ -285,3 +285,22 @@ def test_graph_document_pins_external_script_and_sets_csp() -> None:
     assert 'referrerpolicy="no-referrer"' in document
     assert 'http-equiv="Content-Security-Policy"' in document
     assert "script-src 'nonce-" in document
+    assert 'data-layout-mode="static"' in document
+    assert 'data-motion-mode="ambient"' in document
+    assert "physics: { enabled: false }" in document
+    assert "layout: { improvedLayout: false, randomSeed: 17 }" in document
+    assert "dragNodes: true" in document
+    assert "fixed: { x: false, y: false }" in document
+    assert 'type: "curvedCW"' in document
+    assert "drawNodeBreathing" in document
+    assert "drawEdgeFlow" in document
+    assert "localCollisionTargets" in document
+    assert "animateCollisionResolution" in document
+    assert 'type: "dynamic"' not in document
+    assert "startDrift" not in document
+    assert "beginPhysics" not in document
+    assert "startSimulation" not in document
+    assert "network.focus" not in document
+    assert "gradient" not in document
+    assert "box-shadow" not in document
+    assert "backdrop-filter" not in document
