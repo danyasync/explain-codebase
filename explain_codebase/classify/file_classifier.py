@@ -3,11 +3,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from explain_codebase.models.file_info import FileInfo
+from explain_codebase.utils.source_scope import is_test_source_path, source_name_tokens
 
 
 class FileClassifier:
+    ENTRYPOINT_STEMS = {"__main__", "app", "cli", "main", "server"}
+
     ROLE_PATTERNS = {
-        "entrypoint": ["main", "app", "server", "cli"],
         "config": ["config", "settings"],
         "controller": ["controller", "route", "handler"],
         "service": ["service"],
@@ -29,23 +31,33 @@ class FileClassifier:
         "jobs": "job",
         "middleware": "middleware",
         "components": "component",
+        "spec": "test",
+        "specs": "test",
+        "test": "test",
         "tests": "test",
     }
 
     def classify(self, file_info: FileInfo) -> str:
         path = Path(file_info.path)
         lowered_name = path.stem.lower()
-        lowered_parts = [part.lower() for part in path.parts]
+        lowered_directories = [part.lower() for part in path.parts[:-1]]
+        name_tokens = source_name_tokens(file_info.path)
+
+        if is_test_source_path(file_info.path):
+            return "test"
 
         if file_info.has_main_guard or file_info.has_app_run or file_info.has_app_listen or file_info.has_create_server:
             return "entrypoint"
 
-        for part in lowered_parts:
+        if lowered_name in self.ENTRYPOINT_STEMS:
+            return "entrypoint"
+
+        for part in lowered_directories:
             if part in self.DIRECTORY_HINTS:
                 return self.DIRECTORY_HINTS[part]
 
         for role, patterns in self.ROLE_PATTERNS.items():
-            if any(pattern in lowered_name for pattern in patterns):
+            if name_tokens.intersection(patterns):
                 return role
 
         if file_info.route_handlers:

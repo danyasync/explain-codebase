@@ -44,23 +44,31 @@ class JavaScriptParser:
             language="javascript",
             line_count=len(content.splitlines()),
         )
+        code_positions = self._code_positions(content)
+        code = "".join(
+            character if is_code or character in "\r\n" else " "
+            for character, is_code in zip(content, code_positions, strict=True)
+        )
 
-        for imported in self._find_imports(content):
+        for imported in self._find_imports(content, code_positions):
             info.imports.append(imported)
+            info.import_groups.append([imported])
             self._register_side_effect_import(info, imported)
 
-        info.functions.extend(self._find_functions(content))
+        info.functions.extend(self._find_functions(code))
 
-        info.classes.extend(CLASS_RE.findall(content))
-        info.function_calls.extend(CALL_RE.findall(content))
-        info.route_handlers.extend(ROUTE_RE.findall(content))
+        info.classes.extend(CLASS_RE.findall(code))
+        info.function_calls.extend(CALL_RE.findall(code))
+        info.route_handlers.extend(ROUTE_RE.findall(code))
 
-        lowered = content.lower()
-        info.has_app_listen = "app.listen(" in lowered
-        if "server.listen(" in lowered:
-            info.has_app_listen = True
-        info.has_create_server = "createserver(" in lowered
-        info.has_cli_signal = any(signal in lowered for signal in ["commander", "yargs", "process.argv"])
+        lowered = code.lower()
+        lowered_calls = {call.lower() for call in info.function_calls}
+        info.has_app_listen = bool(lowered_calls.intersection({"app.listen", "server.listen"}))
+        info.has_create_server = any(
+            call == "createserver" or call.endswith(".createserver") for call in lowered_calls
+        )
+        imported_roots = {imported.lower().split("/", 1)[0] for imported in info.imports}
+        info.has_cli_signal = bool(imported_roots.intersection({"commander", "yargs"}) or "process.argv" in lowered)
         for keyword, category in {
             "axios.": "network",
             "fetch(": "network",
@@ -78,24 +86,75 @@ class JavaScriptParser:
                 self._add_side_effect(info, category)
         return info
 
-    def _find_imports(self, content: str) -> list[str]:
+    def _find_imports(self, content: str, code_positions: list[bool] | None = None) -> list[str]:
         imports: list[str] = []
-        for line in content.splitlines():
+        code_positions = code_positions or self._code_positions(content)
+        offset = 0
+        for line in content.splitlines(keepends=True):
             matches: list[tuple[int, str]] = []
             stripped = line.lstrip(" \t")
             if stripped.startswith("import") and len(stripped) > len("import"):
+                start = len(line) - len(stripped)
                 separator = stripped[len("import")]
-                if separator in " \t":
+                if separator in " \t" and code_positions[offset + start]:
                     remainder = stripped[len("import") :].lstrip(" \t")
                     imported = self._static_import_source(remainder)
                     if imported is not None:
-                        matches.append((len(line) - len(stripped), imported))
+                        matches.append((start, imported))
 
             for match in REQUIRE_RE.finditer(line):
-                matches.append((match.start(), match.group(1) or match.group(2)))
+                if code_positions[offset + match.start()]:
+                    matches.append((match.start(), match.group(1) or match.group(2)))
 
             imports.extend(imported for _, imported in sorted(matches, key=lambda item: item[0]))
+            offset += len(line)
         return imports
+
+    def _code_positions(self, content: str) -> list[bool]:
+        positions = [True] * len(content)
+        state = "code"
+        escaped = False
+        index = 0
+        while index < len(content):
+            character = content[index]
+            following = content[index + 1] if index + 1 < len(content) else ""
+
+            if state == "code":
+                if character == "/" and following == "/":
+                    positions[index] = positions[index + 1] = False
+                    state = "line_comment"
+                    index += 2
+                    continue
+                if character == "/" and following == "*":
+                    positions[index] = positions[index + 1] = False
+                    state = "block_comment"
+                    index += 2
+                    continue
+                if character in {'"', "'", "`"}:
+                    positions[index] = False
+                    state = character
+                    escaped = False
+            elif state == "line_comment":
+                positions[index] = False
+                if character in "\r\n":
+                    state = "code"
+            elif state == "block_comment":
+                positions[index] = False
+                if character == "*" and following == "/":
+                    positions[index + 1] = False
+                    state = "code"
+                    index += 2
+                    continue
+            else:
+                positions[index] = False
+                if escaped:
+                    escaped = False
+                elif character == "\\":
+                    escaped = True
+                elif character == state:
+                    state = "code"
+            index += 1
+        return positions
 
     def _static_import_source(self, remainder: str) -> str | None:
         if not remainder:

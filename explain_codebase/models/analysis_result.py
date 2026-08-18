@@ -43,6 +43,11 @@ class AnalysisResult(BaseModel):
     project_type: str
     languages: list[str] = Field(default_factory=list)
     total_files: int
+    truncated: bool = False
+    discovered_files: int = Field(default=0, ge=0)
+    skipped_files: int = Field(default=0, ge=0)
+    parse_errors: int = Field(default=0, ge=0)
+    unresolved_imports: int = Field(default=0, ge=0)
     entrypoints: list[str] = Field(default_factory=list)
     core_modules: list[str] = Field(default_factory=list)
     core_module_rankings: list[RankedModule] = Field(default_factory=list)

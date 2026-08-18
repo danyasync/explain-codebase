@@ -1159,18 +1159,16 @@ class GraphRenderer:
         const haystack = [node.id, node.label, node.cluster, node.role].join(" ").toLowerCase();
         if (haystack.includes(query)) matched.add(node.id);
       }});
-      if (matched.size) {{
-        const kept = new Set(matched);
-        edges.forEach((edge) => {{
-          if (matched.has(edge.from) || matched.has(edge.to)) {{
-            kept.add(edge.from);
-            kept.add(edge.to);
-          }}
-        }});
-        nodes = nodes.filter((node) => kept.has(node.id));
-        ids = kept;
-        edges = edges.filter((edge) => ids.has(edge.from) && ids.has(edge.to));
-      }}
+      const kept = new Set(matched);
+      edges.forEach((edge) => {{
+        if (matched.has(edge.from) || matched.has(edge.to)) {{
+          kept.add(edge.from);
+          kept.add(edge.to);
+        }}
+      }});
+      nodes = nodes.filter((node) => kept.has(node.id));
+      ids = kept;
+      edges = edges.filter((edge) => ids.has(edge.from) && ids.has(edge.to));
     }}
     return {{ nodes, edges }};
   }}
@@ -1229,9 +1227,12 @@ class GraphRenderer:
         shadow: false,
       }};
     }}));
-    descriptionEl.textContent = focusId
-      ? `${{visibleView().description}} Direct dependencies are highlighted.`
-      : visibleView().description;
+    const emptySearch = Boolean(state.search.trim()) && visibleState.nodes.length === 0;
+    descriptionEl.textContent = emptySearch
+      ? "No matching files."
+      : focusId
+        ? `${{visibleView().description}} Direct dependencies are highlighted.`
+        : visibleView().description;
     statsEl.textContent = `${{visibleState.nodes.length}} nodes - ${{visibleState.edges.length}} edges`;
     shell.querySelectorAll(".ecb-mode[data-view]").forEach((button) => {{
       const active = button.dataset.view === state.view;

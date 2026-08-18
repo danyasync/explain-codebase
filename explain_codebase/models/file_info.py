@@ -11,6 +11,7 @@ class FileInfo(BaseModel):
     path: str
     language: Language = "unknown"
     imports: list[str] = Field(default_factory=list)
+    import_groups: list[list[str]] = Field(default_factory=list)
     functions: list[str] = Field(default_factory=list)
     classes: list[str] = Field(default_factory=list)
     decorators: list[str] = Field(default_factory=list)
@@ -23,5 +24,6 @@ class FileInfo(BaseModel):
     has_create_server: bool = False
     has_cli_signal: bool = False
     has_side_effects: bool = False
+    parse_error: bool = False
     line_count: int = 0
     side_effects: list[str] = Field(default_factory=list)
