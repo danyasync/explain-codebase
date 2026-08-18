@@ -34,6 +34,7 @@ from explain_codebase.renderers.html_report_renderer import HtmlReportRenderer
 from explain_codebase.renderers.json_renderer import JsonRenderer
 from explain_codebase.scanner.project_scanner import ProjectScanner
 from explain_codebase.utils.output_utils import terminal_safe_text
+from explain_codebase.utils.source_scope import is_primary_source
 
 
 class PlainHelpCommand(click.Command):
@@ -124,6 +125,7 @@ class Analyzer:
         return self.generate_explanation(project_info, graph)
 
     def scan_project(self, target: Path, max_files: int | None = None) -> ProjectInfo:
+        target = target.expanduser().resolve()
         scanner = ProjectScanner(max_files=max_files)
         file_paths = scanner.scan(target)
 
@@ -138,33 +140,45 @@ class Analyzer:
             info.language = language
             info.role = self.classifier.classify(info)
             parsed_files.append(info)
-            languages.add(language)
+
+        primary_files = [file for file in parsed_files if is_primary_source(file)]
+        languages.update(file.language for file in primary_files if file.language != "unknown")
 
         return ProjectInfo(
             root_path=target,
             files=parsed_files,
             languages=sorted(languages),
-            project_type=self.project_type_detector.detect(target, sorted(languages), parsed_files),
+            project_type=self.project_type_detector.detect(target, sorted(languages), primary_files),
+            truncated=getattr(scanner, "truncated", False),
+            discovered_files=getattr(scanner, "discovered_files", len(file_paths)),
+            skipped_files=getattr(scanner, "skipped_files", 0),
+            parse_errors=sum(file.parse_error for file in parsed_files),
         )
 
     def build_dependency_graph(self, project_info: ProjectInfo):
-        return self.graph_builder.build(project_info.files)
+        graph = self.graph_builder.build(project_info.files)
+        project_info.unresolved_imports = self.graph_builder.unresolved_imports
+        return graph
 
     def generate_explanation(self, project_info: ProjectInfo, graph) -> AnalysisResult:
+        primary_files = [file for file in project_info.files if is_primary_source(file)]
+        primary_paths = {file.path for file in primary_files}
+        analysis_graph = graph.subgraph(primary_paths).copy()
         file_roles = {file.path: file.role or "unknown" for file in project_info.files}
         file_side_effects = {file.path: list(file.side_effects) for file in project_info.files}
-        entrypoints = self.entrypoint_finder.find(project_info.files)
-        core_modules, core_rankings, centrality = self.core_module_detector.detect(graph)
-        side_effect_modules = self.side_effect_detector.detect(project_info.files)
-        architecture_modules = self.architecture_module_detector.detect(project_info.files)
-        large_files = self.large_file_detector.detect(project_info.files)
-        hotspots = self.hotspot_detector.detect(graph)
-        dangerous_files = self.dangerous_file_detector.detect(graph)
-        architecture_issues = self.architecture_smell_detector.detect(graph, project_info.files)
+        primary_roles = {file.path: file.role or "unknown" for file in primary_files}
+        entrypoints = self.entrypoint_finder.find(primary_files)
+        core_modules, core_rankings, centrality = self.core_module_detector.detect(analysis_graph)
+        side_effect_modules = self.side_effect_detector.detect(primary_files)
+        architecture_modules = self.architecture_module_detector.detect(primary_files)
+        large_files = self.large_file_detector.detect(primary_files)
+        hotspots = self.hotspot_detector.detect(analysis_graph)
+        dangerous_files = self.dangerous_file_detector.detect(analysis_graph)
+        architecture_issues = self.architecture_smell_detector.detect(analysis_graph, primary_files)
         execution_flow = self.explanation_engine.build_execution_flow(
-            graph,
+            analysis_graph,
             entrypoints,
-            file_roles=file_roles,
+            file_roles=primary_roles,
         )
 
         result = AnalysisResult(
@@ -172,6 +186,11 @@ class Analyzer:
             project_type=project_info.project_type,
             languages=project_info.languages,
             total_files=len(project_info.files),
+            truncated=project_info.truncated,
+            discovered_files=project_info.discovered_files,
+            skipped_files=project_info.skipped_files,
+            parse_errors=project_info.parse_errors,
+            unresolved_imports=project_info.unresolved_imports,
             entrypoints=entrypoints,
             core_modules=core_modules,
             core_module_rankings=core_rankings,
@@ -200,13 +219,18 @@ class Analyzer:
         project_info = self.scan_project(target, max_files=max_files)
         graph = self.build_dependency_graph(project_info)
         result = self.generate_explanation(project_info, graph)
-        onboarding_path = self.onboarding_path_finder.build(
-            graph,
+        return result, self.find_onboarding_path(project_info, graph, result)
+
+    def find_onboarding_path(self, project_info: ProjectInfo, graph, result: AnalysisResult) -> list[str]:
+        primary_files = [file for file in project_info.files if is_primary_source(file)]
+        primary_paths = {file.path for file in primary_files}
+        primary_graph = graph.subgraph(primary_paths).copy()
+        return self.onboarding_path_finder.build(
+            primary_graph,
             result.entrypoints,
-            result.file_roles,
+            {file.path: file.role or "unknown" for file in primary_files},
             result.core_modules,
         )
-        return result, onboarding_path
 
     def guess_project_root(self, target_file: Path) -> Path:
         resolved_target = target_file.resolve()
@@ -462,12 +486,7 @@ def _run_onboarding_command(target: str, json_output: bool, max_files: int | Non
 
         typer.echo("[5/5] Generating explanation...", err=True)
         result = analyzer.generate_explanation(project_info, dependency_graph)
-        onboarding_path = analyzer.onboarding_path_finder.build(
-            dependency_graph,
-            result.entrypoints,
-            result.file_roles,
-            result.core_modules,
-        )
+        onboarding_path = analyzer.find_onboarding_path(project_info, dependency_graph, result)
 
         if json_output:
             typer.echo(

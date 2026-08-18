@@ -6,6 +6,7 @@ from rich.console import Console
 
 from explain_codebase.models.analysis_result import AnalysisResult, FileExplanation
 from explain_codebase.utils.output_utils import terminal_safe_text
+from explain_codebase.utils.source_scope import is_primary_path
 
 
 class CliRenderer:
@@ -199,8 +200,9 @@ class CliRenderer:
             return result.core_module_rankings[0].path
         if result.core_modules:
             return result.core_modules[0]
-        if result.file_roles:
-            return sorted(result.file_roles)[0]
+        primary_paths = sorted(path for path, role in result.file_roles.items() if is_primary_path(path, role))
+        if primary_paths:
+            return primary_paths[0]
         return "No clear starting point inferred"
 
     def _limit_list(self, values: list[str]) -> list[str]:

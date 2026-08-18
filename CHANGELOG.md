@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-18
+
+### Added
+
+- Added `truncated`, `discovered_files`, `skipped_files`, Python `parse_errors`, and `unresolved_imports` coverage signals to analysis results.
+- Added focused regression coverage for entrypoint detection, mixed-language imports, Python `src/` layouts, Git worktrees, auxiliary source scope, scan diagnostics, and empty graph searches.
+
+### Changed
+
+- Made dependency resolution language-aware so Python, JavaScript, and TypeScript files prefer compatible local modules, including Python packages below a root-level `src/` directory.
+- Included tracked and untracked non-ignored source files from the current Git worktree while preserving built-in path and file safety checks.
+- Excluded tests, fixtures, and examples from the default entrypoint, centrality, risk, hotspot, side-effect, and architecture rankings while retaining them in the complete file graph.
+
+### Fixed
+
+- Removed false entrypoints caused by broad filename matches and arbitrary `.run()` calls, and made the `test` role take priority over launch signals.
+- Made a graph search with no matching files display an empty result instead of restoring the complete graph.
+
 ## [0.2.1] - 2026-08-02
 
 ### Changed
@@ -89,7 +107,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 - Published the initial command-line release with repository analysis, dependency graphs, JSON output, HTML reports, onboarding paths, and architecture checks.
 
-[Unreleased]: https://github.com/danyasync/explain-codebase/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/danyasync/explain-codebase/compare/v0.2.2...HEAD
+[0.2.2]: https://github.com/danyasync/explain-codebase/compare/v0.2.1...v0.2.2
 [0.2.1]: https://github.com/danyasync/explain-codebase/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/danyasync/explain-codebase/compare/63e1285083b2bdb06de2212aeddcdaebb18e2649...v0.2.0
 [0.1.4]: https://pypi.org/project/explain-codebase/0.1.4/

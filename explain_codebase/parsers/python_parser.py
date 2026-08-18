@@ -76,6 +76,16 @@ ROUTE_DECORATOR_NAMES = {
     "websocket_route",
 }
 
+APP_RUN_CALLS = {
+    "app.run",
+    "uvicorn.run",
+}
+
+CLI_CALLS = {
+    "click.command",
+    "typer.run",
+}
+
 
 class PythonParser:
     def parse(self, path: Path, root_path: Path) -> FileInfo:
@@ -90,18 +100,22 @@ class PythonParser:
         try:
             tree = ast.parse(content)
         except SyntaxError:
+            info.parse_error = True
             return info
 
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     info.imports.append(alias.name)
+                    info.import_groups.append([alias.name])
                     self._register_side_effect_import(info, alias.name)
             elif isinstance(node, ast.ImportFrom):
                 module = node.module or ""
                 import_base = "." * node.level + module
+                import_group: list[str] = []
                 if import_base:
                     info.imports.append(import_base)
+                    import_group.append(import_base)
                 if not node.level and module:
                     self._register_side_effect_import(info, module)
                 for alias in node.names:
@@ -111,6 +125,9 @@ class PythonParser:
                     imported_member = f"{import_base}{separator}{alias.name}" if import_base else alias.name
                     if imported_member != import_base:
                         info.imports.append(imported_member)
+                        import_group.append(imported_member)
+                if import_group:
+                    info.import_groups.append(import_group)
             elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
                 self._register_function(info, node)
             elif isinstance(node, ast.ClassDef):
@@ -120,9 +137,9 @@ class PythonParser:
                 if call_name:
                     info.function_calls.append(call_name)
                     lowered = call_name.lower()
-                    if lowered in {"uvicorn.run", "app.run", "run"} or lowered.endswith(".run"):
+                    if lowered in APP_RUN_CALLS:
                         info.has_app_run = True
-                    if any(signal in lowered for signal in ["typer.run", "click.command", "argparse"]):
+                    if lowered in CLI_CALLS or lowered == "argparse" or lowered.startswith("argparse."):
                         info.has_cli_signal = True
                     self._register_side_effect_call(info, lowered)
             elif isinstance(node, ast.If) and self._is_main_guard(node):
@@ -154,12 +171,21 @@ class PythonParser:
         test = node.test
         if not isinstance(test, ast.Compare):
             return False
-        if not isinstance(test.left, ast.Name) or test.left.id != "__name__":
+        if len(test.ops) != 1 or not isinstance(test.ops[0], ast.Eq) or len(test.comparators) != 1:
             return False
-        if not test.comparators:
-            return False
-        comparator = test.comparators[0]
-        return isinstance(comparator, ast.Constant) and comparator.value == "__main__"
+        left, right = test.left, test.comparators[0]
+        return (
+            self._is_name_variable(left)
+            and self._is_main_constant(right)
+            or self._is_main_constant(left)
+            and self._is_name_variable(right)
+        )
+
+    def _is_name_variable(self, node: ast.AST) -> bool:
+        return isinstance(node, ast.Name) and node.id == "__name__"
+
+    def _is_main_constant(self, node: ast.AST) -> bool:
+        return isinstance(node, ast.Constant) and node.value == "__main__"
 
     def _register_side_effect_import(self, info: FileInfo, module_name: str) -> None:
         root_module = module_name.split(".")[0].lower()

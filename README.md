@@ -63,7 +63,9 @@ Run with --verbose to see full architecture
 - a suggested reading order for onboarding
 - focused dependency graphs and an HTML architecture report
 
-The results are heuristic signals intended to shorten initial investigation. They are not a substitute for reading critical code paths or running the target project's own checks.
+The results are heuristic signals intended to shorten initial investigation. Default rankings focus on application source: files below `tests`, `fixtures`, and `examples` remain available in the complete file graph but do not distort entrypoint, centrality, hotspot, or risk rankings.
+
+These signals are not a substitute for reading critical code paths or running the target project's own checks.
 
 ## Installation
 
@@ -147,7 +149,7 @@ explain-codebase . --graph --full
 | JavaScript | `.js`, `.jsx`, `.mjs`, `.cjs` | static imports, CommonJS imports, calls, and side effects |
 | TypeScript | `.ts`, `.tsx`, `.mts`, `.cts` | static imports, calls, and side effects |
 
-Import resolution accounts for relative paths, package entry files, and the supported extension variants where those relationships can be determined statically.
+Import resolution keeps Python, JavaScript, and TypeScript candidates separate, accounts for relative paths and package entry files, and recognizes conventional root-level Python `src/` package layouts where those relationships can be determined statically.
 
 ## Scanning behavior
 
@@ -155,13 +157,13 @@ For a local directory, the scanner:
 
 - considers only the supported source extensions
 - keeps resolved file paths inside the selected repository
-- honors the optional file-count limit and a 1 MiB per-file size limit
+- honors the optional parsed-file limit and a 1 MiB per-file size limit
 - skips common dependency, cache, build, coverage, and environment directories
 - respects the root `.gitignore` file
-- limits a Git worktree to tracked files when Git metadata can be read, then falls back to filesystem scanning if Git is unavailable
+- reads tracked and untracked non-ignored files from a Git worktree when Git metadata is available, then falls back to filesystem scanning if Git is unavailable
 - handles unreadable source files safely and skips unsupported or oversized files
 
-Use `--max-files` to lower the file-count limit for a focused or faster scan.
+Use `--max-files` to lower the number of files parsed for a focused run. Application files are selected before tests, fixtures, and examples. Results report whether that limit truncated the analysis, along with discovered, skipped, Python syntax-error, and unresolved-local-import counts.
 
 ## Public GitHub repositories
 
@@ -196,6 +198,8 @@ CI mode exits with status `0` when no architecture issues are found and status `
 ### JSON
 
 JSON output includes repository information, entry points, central modules, side-effect files, architecture areas, large files, hotspots, risky files, architecture issues, execution paths, and paths to optional HTML outputs.
+
+Coverage is explicit: `truncated` reports whether `--max-files` omitted supported files, while `discovered_files`, `skipped_files`, Python `parse_errors`, and `unresolved_imports` make partial results visible to scripts and CI jobs.
 
 ## How it works
 

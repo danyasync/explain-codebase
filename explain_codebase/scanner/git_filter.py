@@ -34,13 +34,22 @@ def is_ignored_by_gitignore(relative_path: Path, spec: GitIgnoreSpec | None, is_
 
 
 def load_tracked_files(root_path: Path) -> set[str] | None:
+    """Return tracked files and untracked files that are visible to Git."""
     if not (root_path / ".git").exists():
         return None
 
     try:
         with hardened_git_runtime(safe_directory=root_path) as (command_prefix, environment):
             completed = subprocess.run(
-                [*command_prefix, "ls-files", "--cached", "-z", "--"],
+                [
+                    *command_prefix,
+                    "ls-files",
+                    "--cached",
+                    "--others",
+                    "--exclude-standard",
+                    "-z",
+                    "--",
+                ],
                 cwd=root_path,
                 capture_output=True,
                 check=False,
@@ -52,9 +61,9 @@ def load_tracked_files(root_path: Path) -> set[str] | None:
     if completed.returncode != 0:
         return None
 
-    tracked_files: set[str] = set()
+    visible_files: set[str] = set()
     for raw_path in completed.stdout.split(b"\0"):
         if not raw_path:
             continue
-        tracked_files.add(raw_path.decode("utf-8", errors="ignore"))
-    return tracked_files
+        visible_files.add(raw_path.decode("utf-8", errors="ignore"))
+    return visible_files

@@ -60,7 +60,14 @@ def test_git_listing_disables_repository_hooks_and_sanitizes_environment(monkeyp
     kwargs = captured["kwargs"]
     assert command[0] == str(fake_git)
     assert "core.fsmonitor=false" in command
-    assert command[-4:] == ["ls-files", "--cached", "-z", "--"]
+    assert command[-6:] == [
+        "ls-files",
+        "--cached",
+        "--others",
+        "--exclude-standard",
+        "-z",
+        "--",
+    ]
     assert kwargs["timeout"] == 20
     assert kwargs["env"]["GIT_TERMINAL_PROMPT"] == "0"
     assert kwargs["env"]["GIT_CONFIG_COUNT"] == "0"
@@ -161,7 +168,7 @@ def test_scanner_skips_oversized_files_and_supports_modern_js_extensions(tmp_pat
     assert safe_read_text(oversized) == ""
 
 
-def test_max_files_is_positive_and_stops_scanning_early(monkeypatch, tmp_path: Path) -> None:
+def test_max_files_is_positive_and_reports_truncation(monkeypatch, tmp_path: Path) -> None:
     for name in ["a.py", "b.py", "c.py"]:
         (tmp_path / name).write_text("value = 1\n", encoding="utf-8")
 
@@ -176,8 +183,13 @@ def test_max_files_is_positive_and_stops_scanning_early(monkeypatch, tmp_path: P
 
     monkeypatch.setattr(project_scanner, "is_supported_source_file", tracking_check)
 
-    assert ProjectScanner(max_files=1).scan(tmp_path) == [tmp_path / "a.py"]
-    assert checked_paths == [tmp_path / "a.py"]
+    scanner = ProjectScanner(max_files=1)
+
+    assert scanner.scan(tmp_path) == [tmp_path / "a.py"]
+    assert checked_paths == [tmp_path / "a.py", tmp_path / "b.py", tmp_path / "c.py"]
+    assert scanner.truncated is True
+    assert scanner.discovered_files == 3
+    assert scanner.skipped_files == 2
     with pytest.raises(ValueError, match="greater than zero"):
         ProjectScanner(max_files=0)
     with pytest.raises(ValueError, match="greater than zero"):
